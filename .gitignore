@@ -42,3 +42,6 @@ RingBridge/local.properties
 # ── Server Python env ─────────────────────────────────────────────────────────
 RingBridgeServer/.venv/
 RingBridgeServer/__pycache__/
+
+# ── RingBridge DB  ────────────────────────────────────────────────────────────
+RingBridgeServer/data/ringbridge.db
