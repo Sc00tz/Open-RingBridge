@@ -1,0 +1,44 @@
+# ── Research / reverse engineering ───────────────────────────────────────────
+# Decompiled APK sources, raw APK binaries, ADB bugreports, BLE captures.
+# Copyright material and large binaries — keep off GitHub.
+research/
+
+# ── Scratch scripts ───────────────────────────────────────────────────────────
+# Iteration/debug scripts from development. Not production code.
+scripts/scratch/
+
+# ── Runtime artifacts ─────────────────────────────────────────────────────────
+*.log
+ring_data.db
+ring_debug.log
+
+# ── Python env ────────────────────────────────────────────────────────────────
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.Python
+
+# ── Working notes ─────────────────────────────────────────────────────────────
+CHECKLIST.md
+"Android App Brainstorming.txt"
+
+# ── Claude Code internal ──────────────────────────────────────────────────────
+.claude/
+
+# ── macOS ─────────────────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ── Android build outputs ─────────────────────────────────────────────────────
+RingBridge/.gradle/
+RingBridge/build/
+RingBridge/app/build/
+RingBridge/local.properties
+*.apk
+*.aab
+
+# ── Server Python env ─────────────────────────────────────────────────────────
+RingBridgeServer/.venv/
+RingBridgeServer/__pycache__/

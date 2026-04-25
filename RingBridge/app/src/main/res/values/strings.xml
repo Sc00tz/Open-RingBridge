@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">RingBridge</string>
+    <string name="notification_channel_name">Ring Service</string>
+    <string name="notification_channel_desc">Keeps BLE connection to smart ring active</string>
+    <string name="notification_title">RingBridge running</string>
+    <string name="notification_text">Connected to ring — streaming data</string>
+    <string name="notification_disconnected_title">Ring disconnected</string>
+    <string name="notification_disconnected_text">Tap to open app</string>
+</resources>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- BioLocal brand -->
+    <color name="biolocal_blue">#FF1A4A8A</color>
+    <color name="biolocal_blue_dark">#FF0D2E5A</color>
+
+    <!-- Connection status card backgrounds -->
+    <color name="status_idle">#FF2C2C2C</color>
+    <color name="status_scanning">#FF4A3A00</color>
+    <color name="status_connecting">#FF0D3A5A</color>
+    <color name="status_streaming">#FF0D3D1A</color>
+    <color name="status_reconnecting">#FF4A2400</color>
+
+    <!-- Metric accent strips -->
+    <color name="accent_hr">#FFE53935</color>
+    <color name="accent_spo2">#FF1E88E5</color>
+    <color name="accent_bp">#FFE91E63</color>
+    <color name="accent_battery">#FF43A047</color>
+    <color name="accent_steps">#FFEF6C00</color>
+    <color name="accent_resp">#FF00ACC1</color>
+    <color name="accent_hrv">#FF8E24AA</color>
+    <color name="accent_stress">#FFFFC107</color>
+    <color name="accent_sleep">#FF3949AB</color>
+    <color name="accent_glucose">#FF00897B</color>
+    <color name="accent_temp">#FFFF5722</color>
+    <color name="accent_vo2">#FF0288D1</color>
+    <color name="card_bg">#FFF5F5F5</color>
+    <color name="section_label_color">#FF666666</color>
+
+    <!-- Metric status colors (green / amber / red) -->
+    <color name="status_good">#FF43A047</color>
+    <color name="status_caution">#FFF9A825</color>
+    <color name="status_alert">#FFE53935</color>
+</resources>

@@ -1,0 +1,489 @@
+1. What to record (and how often)
+
+Not everything needs the same resolution.
+
+High-frequency (every 1–5 min if possible)
+HR
+HRV
+Stress (since it’s derived from HRV usually)
+Respiratory rate
+
+👉 These benefit from trends and variability.
+
+Medium frequency (every 10–30 min)
+SpO2
+Blood pressure (if it's actually estimated, treat carefully)
+Blood glucose (almost certainly estimated → trend only, not medical)
+Low frequency / event-based
+Steps → accumulate continuously
+Battery → only when it changes significantly
+Sleep → session-based (store full breakdown per sleep session)
+Workouts → store as sessions with high-resolution data inside
+Storage tip (important)
+
+Don’t store raw data forever at full resolution:
+
+Keep raw for 24–72h
+Downsample into:
+5-min averages
+hourly averages
+daily summaries
+
+This keeps your DB sane.
+
+2. What you can calculate (this is where your app gets GOOD)
+
+These are the real value features.
+
+Recovery / readiness score
+
+Combine:
+
+HRV (higher = better)
+Resting HR (lower = better)
+Sleep score
+
+👉 Output: “Readiness Score (0–100)”
+
+Stress trends
+
+You already have stress (0–100), but you can:
+
+Calculate daily average stress
+Detect spikes
+Show “time spent in high stress”
+Cardiovascular insights
+Resting HR trend over time
+HR recovery after workouts
+HR zones during workouts
+Sleep quality insights
+
+Beyond just showing:
+
+Sleep efficiency = sleep time / time in bed
+Deep sleep %
+REM %
+
+👉 Then classify:
+
+“Restorative sleep”
+“Fragmented sleep”
+Activity insights
+Steps vs baseline
+Active minutes
+Calories (if reliable)
+Respiratory health trends
+Night respiration anomalies
+Link with SpO2 dips
+Correlations (this is POWERFUL)
+Sleep vs HRV
+Stress vs HRV
+Steps vs sleep quality
+
+👉 “You sleep 20% better on days you walk >7k steps”
+
+3. App layout (this matters more than features)
+🏠 Home Dashboard (MOST IMPORTANT)
+
+Keep it simple:
+
+Top:
+
+Readiness Score (big, central)
+
+Below:
+
+HR (current + resting)
+Stress (current)
+Steps progress ring
+
+Mini cards:
+
+Sleep last night
+HRV
+Battery
+
+👉 Think: “at a glance health”
+
+❤️ Vitals Page
+
+Grouped logically:
+
+Heart: HR, HRV, resting HR
+Oxygen: SpO2
+Respiration
+Stress
+
+👉 Show trends, not just numbers.
+
+😴 Sleep Page
+Sleep score (big)
+Timeline (sleep stages)
+Breakdown:
+Deep / Light / REM
+Awake count
+
+Add:
+
+“Insights” (1–2 sentences max)
+🏃 Activity Page
+Steps (daily progress)
+Distance
+Calories
+Workouts list
+📊 Trends Page
+
+Let users pick:
+
+Metric
+Time range
+⚙️ Device Page
+Battery
+Sync status
+Firmware (if applicable)
+4. Charts that actually matter
+
+Avoid clutter. Use:
+
+Line charts (most useful)
+HR over day
+HRV over week
+Stress over day
+Stacked bar (sleep)
+Deep / Light / REM
+Ring/progress charts
+Steps goal
+Sleep goal
+Heatmaps (advanced but awesome)
+Sleep quality over time
+Stress patterns by hour/day
+Correlation charts (optional advanced)
+Scatter plots:
+Sleep vs HRV
+Steps vs sleep score
+5. Goals & tracking
+
+Make these flexible, not rigid.
+
+Core goals
+Steps (daily)
+Sleep duration
+Sleep score
+Activity frequency (workouts/week)
+Advanced goals
+Maintain HRV above baseline
+Reduce stress time
+Improve sleep consistency
+Streaks (very engaging)
+“7 days hitting step goal”
+“5 nights of good sleep”
+Adaptive goals (VERY powerful)
+
+Instead of fixed:
+
+Increase step goal gradually
+Adjust sleep target based on user behavior
+6. Smart features (this is what makes it stand out)
+Insights engine (simple rules-based is enough)
+
+Examples:
+
+“Your HRV dropped after poor sleep”
+“You’re most stressed between 2–4 PM”
+“You recover better on days with more steps”
+Alerts
+High stress sustained
+Low SpO2 overnight
+Elevated resting HR
+Baselines (CRITICAL)
+
+Compute per-user:
+
+Normal HRV
+Normal HR
+Normal sleep
+
+👉 Then compare everything to them, not generic values.
+
+Tags / journaling (optional but huge)
+
+Let users log:
+
+Caffeine
+Alcohol
+Exercise
+Mood
+
+👉 Then correlate with data.
+
+7. One important reality check
+
+Some of these readings (especially):
+
+Blood glucose
+Blood pressure
+
+…from a generic ring are likely estimates, not medical-grade.
+
+👉 Position them as:
+
+“Trends”
+“Wellness indicators”
+
+NOT medical advice.
+
+8. If you want a strong starting structure
+
+Here’s a clean MVP:
+
+Dashboard
+
+Readiness
+Steps
+Sleep summary
+HR / Stress
+
+Vitals
+
+HR, HRV, SpO2, stress
+
+Sleep
+
+Full breakdown + score
+
+Activity
+
+Steps + workouts
+
+Trends
+
+Graph explorer
+
+Mock Ups:
+
+Home Page:
+┌──────────────────────────────┐
+│  Good Morning, Travis        │
+│  Mon, Apr 13                │
+├──────────────────────────────┤
+│        82                   │
+│   Readiness Score           │
+│  ▲ +5 from yesterday        │
+├──────────────────────────────┤
+│ ❤️ HR        😌 Stress      │
+│  72 bpm       34 / 100      │
+│  Rest: 60     Low           │
+├──────────────────────────────┤
+│ 🚶 Steps                    │
+│  5,842 / 10,000            │
+│  [██████░░░░░░░░]          │
+├──────────────────────────────┤
+│ 😴 Sleep (Last Night)      │
+│  Score: 78                 │
+│  6h 42m                    │
+│  Deep: 1h 20m              │
+├──────────────────────────────┤
+│ ⚡ Battery: 68%             │
+└──────────────────────────────┘
+
+Bottom Nav:
+[Home] [Vitals] [Sleep] [Activity] [Trends]
+
+Vitals Page:
+
+┌──────────────────────────────┐
+│ Vitals                       │
+├──────────────────────────────┤
+
+│ ❤️ Heart Rate               │
+│  72 bpm                     │
+│  Resting: 60                │
+│  ────────────────           │
+│   📈 (mini line chart)      │
+
+├──────────────────────────────┤
+│ 💓 HRV                      │
+│  48 ms                      │
+│  Baseline: 52               │
+│  Status: Slightly Low       │
+│  ────────────────           │
+│   📈                        │
+
+├──────────────────────────────┤
+│ 😌 Stress                   │
+│  34 / 100                   │
+│  Today Avg: 41              │
+│  Time High: 1h 12m          │
+│  ────────────────           │
+│   📈                        │
+
+├──────────────────────────────┤
+│ 🫁 Respiration              │
+│  14 brpm                    │
+
+├──────────────────────────────┤
+│ 🩸 SpO2                     │
+│  97%                        │
+
+├──────────────────────────────┤
+│ ⚠️ BP / Glucose (Trend Only)│
+│  120 / 80 mmHg              │
+│  5.6 mmol/L                 │
+└──────────────────────────────┘
+
+Sleep Page:
+
+┌──────────────────────────────┐
+│ Sleep                        │
+├──────────────────────────────┤
+
+│        78                   │
+│     Sleep Score             │
+│     "Fair Recovery"         │
+
+├──────────────────────────────┤
+│ 🕒 6h 42m total             │
+│ Bed: 11:12 PM               │
+│ Wake: 5:54 AM               │
+
+├──────────────────────────────┤
+│ Sleep Stages Timeline       │
+│ ─────────────────────────── │
+│ █ Light ▓ Deep ░ REM        │
+│ ███▓▓░░██▓░░██              │
+
+├──────────────────────────────┤
+│ Breakdown                   │
+│ Deep   1h 20m               │
+│ Light  3h 50m               │
+│ REM    1h 32m               │
+│ Awake  4 times              │
+
+├──────────────────────────────┤
+│ Night Metrics               │
+│ ❤️ Avg HR: 58               │
+│ 💓 HRV: 52 ms               │
+│ 🩸 SpO2: 96%                │
+
+├──────────────────────────────┤
+│ Insight                     │
+│ "More deep sleep than avg,  │
+│  but frequent wakeups."     │
+└──────────────────────────────┘
+
+Activity Page:
+┌──────────────────────────────┐
+│ Activity                     │
+├──────────────────────────────┤
+
+│ 🚶 Steps                    │
+│  5,842 / 10,000            │
+│  [██████░░░░░░░░]          │
+
+├──────────────────────────────┤
+│ 📏 Distance                 │
+│  2.8 miles                 │
+
+├──────────────────────────────┤
+│ 🔥 Calories                 │
+│  320 kcal                  │
+
+├──────────────────────────────┤
+│ 🏋️ Workouts                │
+│ --------------------------  │
+│ 🏃 Running (Today)          │
+│  24 min • 2.1 mi            │
+│                             │
+│ 🚶 Walking (Yesterday)      │
+│  40 min • 3.0 mi            │
+│                             │
+│ [+ Start Workout]           │
+└──────────────────────────────┘
+
+Trends Page:
+
+┌──────────────────────────────┐
+│ Trends                       │
+├──────────────────────────────┤
+
+│ Metric: [HRV ▼]             │
+│ Range:  [7 Days ▼]          │
+
+├──────────────────────────────┤
+│                              │
+│        📈 Line Chart         │
+│                              │
+
+├──────────────────────────────┤
+│ Avg: 50 ms                  │
+│ High: 62                    │
+│ Low: 38                     │
+
+├──────────────────────────────┤
+│ Correlation Insight         │
+│ "Higher HRV on days with    │
+│  more than 7k steps."       │
+└──────────────────────────────┘
+
+Device Settings:
+
+┌──────────────────────────────┐
+│ Ring Settings                │
+├──────────────────────────────┤
+
+│ 🔋 Battery                  │
+│  68%                        │
+
+├──────────────────────────────┤
+│ 🔄 Last Sync                │
+│  2 minutes ago              │
+
+├──────────────────────────────┤
+│ ⚙️ Data Settings            │
+│  Sync Frequency: 5 min      │
+
+├──────────────────────────────┤
+│ 🎯 Goals                    │
+│  Steps: 10,000              │
+│  Sleep: 7h                  │
+
+├──────────────────────────────┤
+│ 🔔 Alerts                   │
+│  High Stress: ON            │
+│  Low SpO2: ON               │
+└──────────────────────────────┘
+
+UX DETAILS THAT WILL MATTER A LOT
+1. Color logic (don’t skip this)
+Green = good
+Yellow = caution
+Red = needs attention
+
+Used for:
+
+HRV vs baseline
+Stress level
+Sleep quality
+2. Card-based design
+
+Everything is:
+
+Modular
+Reorderable later
+Easy to expand
+3. Tap for detail
+
+Each card → opens:
+
+Full screen graph
+Historical data
+Insights
+4. Keep insights SHORT
+
+Bad:
+
+“Your HRV is lower due to multiple factors…”
+
+Good:
+
+“HRV lower than usual. Likely due to poor sleep.”

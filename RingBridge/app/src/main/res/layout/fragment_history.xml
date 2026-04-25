@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="HISTORY"
+            android:textSize="11sp"
+            android:letterSpacing="0.15"
+            android:textColor="@color/section_label_color"
+            android:layout_marginBottom="6dp"
+            android:layout_marginStart="4dp" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/card_bg">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- Heart Rate -->
+                <LinearLayout
+                    android:id="@+id/rowHr"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:background="?attr/selectableItemBackground">
+                    <View android:layout_width="4dp" android:layout_height="32dp"
+                        android:background="@color/accent_hr" android:layout_marginEnd="14dp" />
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:text="Heart Rate"
+                        android:textSize="15sp" android:textColor="?android:attr/textColorPrimary" />
+                    <TextView android:id="@+id/tvHrLast" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="—" android:textSize="13sp" android:textColor="@color/section_label_color"
+                        android:layout_marginEnd="8dp" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="›" android:textSize="18sp" android:textColor="@color/section_label_color" />
+                </LinearLayout>
+
+                <View android:layout_width="match_parent" android:layout_height="0.5dp"
+                    android:background="@color/section_label_color" android:alpha="0.2" android:layout_marginStart="34dp" />
+
+                <!-- SpO₂ -->
+                <LinearLayout
+                    android:id="@+id/rowSpo2"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:background="?attr/selectableItemBackground">
+                    <View android:layout_width="4dp" android:layout_height="32dp"
+                        android:background="@color/accent_spo2" android:layout_marginEnd="14dp" />
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:text="SpO₂"
+                        android:textSize="15sp" android:textColor="?android:attr/textColorPrimary" />
+                    <TextView android:id="@+id/tvSpo2Last" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="—" android:textSize="13sp" android:textColor="@color/section_label_color"
+                        android:layout_marginEnd="8dp" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="›" android:textSize="18sp" android:textColor="@color/section_label_color" />
+                </LinearLayout>
+
+                <View android:layout_width="match_parent" android:layout_height="0.5dp"
+                    android:background="@color/section_label_color" android:alpha="0.2" android:layout_marginStart="34dp" />
+
+                <!-- Blood Pressure -->
+                <LinearLayout
+                    android:id="@+id/rowBp"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:background="?attr/selectableItemBackground">
+                    <View android:layout_width="4dp" android:layout_height="32dp"
+                        android:background="@color/accent_bp" android:layout_marginEnd="14dp" />
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:text="Blood Pressure"
+                        android:textSize="15sp" android:textColor="?android:attr/textColorPrimary" />
+                    <TextView android:id="@+id/tvBpLast" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="—" android:textSize="13sp" android:textColor="@color/section_label_color"
+                        android:layout_marginEnd="8dp" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="›" android:textSize="18sp" android:textColor="@color/section_label_color" />
+                </LinearLayout>
+
+                <View android:layout_width="match_parent" android:layout_height="0.5dp"
+                    android:background="@color/section_label_color" android:alpha="0.2" android:layout_marginStart="34dp" />
+
+                <!-- HRV -->
+                <LinearLayout
+                    android:id="@+id/rowHrv"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:background="?attr/selectableItemBackground">
+                    <View android:layout_width="4dp" android:layout_height="32dp"
+                        android:background="@color/accent_hrv" android:layout_marginEnd="14dp" />
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:text="HRV"
+                        android:textSize="15sp" android:textColor="?android:attr/textColorPrimary" />
+                    <TextView android:id="@+id/tvHrvLast" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="—" android:textSize="13sp" android:textColor="@color/section_label_color"
+                        android:layout_marginEnd="8dp" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="›" android:textSize="18sp" android:textColor="@color/section_label_color" />
+                </LinearLayout>
+
+                <View android:layout_width="match_parent" android:layout_height="0.5dp"
+                    android:background="@color/section_label_color" android:alpha="0.2" android:layout_marginStart="34dp" />
+
+                <!-- Stress -->
+                <LinearLayout
+                    android:id="@+id/rowStress"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:background="?attr/selectableItemBackground">
+                    <View android:layout_width="4dp" android:layout_height="32dp"
+                        android:background="@color/accent_stress" android:layout_marginEnd="14dp" />
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:text="Stress"
+                        android:textSize="15sp" android:textColor="?android:attr/textColorPrimary" />
+                    <TextView android:id="@+id/tvStressLast" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="—" android:textSize="13sp" android:textColor="@color/section_label_color"
+                        android:layout_marginEnd="8dp" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="›" android:textSize="18sp" android:textColor="@color/section_label_color" />
+                </LinearLayout>
+
+                <View android:layout_width="match_parent" android:layout_height="0.5dp"
+                    android:background="@color/section_label_color" android:alpha="0.2" android:layout_marginStart="34dp" />
+
+                <!-- Blood Glucose -->
+                <LinearLayout
+                    android:id="@+id/rowGlucose"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:background="?attr/selectableItemBackground">
+                    <View android:layout_width="4dp" android:layout_height="32dp"
+                        android:background="@color/accent_glucose" android:layout_marginEnd="14dp" />
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:text="Blood Glucose"
+                        android:textSize="15sp" android:textColor="?android:attr/textColorPrimary" />
+                    <TextView android:id="@+id/tvGlucoseLast" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="—" android:textSize="13sp" android:textColor="@color/section_label_color"
+                        android:layout_marginEnd="8dp" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="›" android:textSize="18sp" android:textColor="@color/section_label_color" />
+                </LinearLayout>
+
+                <View android:layout_width="match_parent" android:layout_height="0.5dp"
+                    android:background="@color/section_label_color" android:alpha="0.2" android:layout_marginStart="34dp" />
+
+                <!-- Resp Rate -->
+                <LinearLayout
+                    android:id="@+id/rowResp"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:background="?attr/selectableItemBackground">
+                    <View android:layout_width="4dp" android:layout_height="32dp"
+                        android:background="@color/accent_resp" android:layout_marginEnd="14dp" />
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:text="Resp Rate"
+                        android:textSize="15sp" android:textColor="?android:attr/textColorPrimary" />
+                    <TextView android:id="@+id/tvRespLast" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="—" android:textSize="13sp" android:textColor="@color/section_label_color"
+                        android:layout_marginEnd="8dp" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="›" android:textSize="18sp" android:textColor="@color/section_label_color" />
+                </LinearLayout>
+
+                <View android:layout_width="match_parent" android:layout_height="0.5dp"
+                    android:background="@color/section_label_color" android:alpha="0.2" android:layout_marginStart="34dp" />
+
+                <!-- Steps -->
+                <LinearLayout
+                    android:id="@+id/rowSteps"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:background="?attr/selectableItemBackground">
+                    <View android:layout_width="4dp" android:layout_height="32dp"
+                        android:background="@color/accent_steps" android:layout_marginEnd="14dp" />
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:text="Steps"
+                        android:textSize="15sp" android:textColor="?android:attr/textColorPrimary" />
+                    <TextView android:id="@+id/tvStepsLast" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="—" android:textSize="13sp" android:textColor="@color/section_label_color"
+                        android:layout_marginEnd="8dp" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="›" android:textSize="18sp" android:textColor="@color/section_label_color" />
+                </LinearLayout>
+
+                <View android:layout_width="match_parent" android:layout_height="0.5dp"
+                    android:background="@color/section_label_color" android:alpha="0.2" android:layout_marginStart="34dp" />
+
+                <!-- Battery -->
+                <LinearLayout
+                    android:id="@+id/rowBattery"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:background="?attr/selectableItemBackground">
+                    <View android:layout_width="4dp" android:layout_height="32dp"
+                        android:background="@color/accent_battery" android:layout_marginEnd="14dp" />
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:text="Battery"
+                        android:textSize="15sp" android:textColor="?android:attr/textColorPrimary" />
+                    <TextView android:id="@+id/tvBatteryLast" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="—" android:textSize="13sp" android:textColor="@color/section_label_color"
+                        android:layout_marginEnd="8dp" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="›" android:textSize="18sp" android:textColor="@color/section_label_color" />
+                </LinearLayout>
+
+                <View android:layout_width="match_parent" android:layout_height="0.5dp"
+                    android:background="@color/section_label_color" android:alpha="0.2" android:layout_marginStart="34dp" />
+
+                <!-- Sleep -->
+                <LinearLayout
+                    android:id="@+id/rowSleep"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:background="?attr/selectableItemBackground">
+                    <View android:layout_width="4dp" android:layout_height="32dp"
+                        android:background="@color/accent_sleep" android:layout_marginEnd="14dp" />
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:text="Sleep"
+                        android:textSize="15sp" android:textColor="?android:attr/textColorPrimary" />
+                    <TextView android:id="@+id/tvSleepLast" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="—" android:textSize="13sp" android:textColor="@color/section_label_color"
+                        android:layout_marginEnd="8dp" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="›" android:textSize="18sp" android:textColor="@color/section_label_color" />
+                </LinearLayout>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+</ScrollView>

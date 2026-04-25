@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<h2 class="text-2xl font-bold text-gray-800 mb-6">Settings</h2>
+
+{% if saved %}
+<div class="bg-green-50 border border-green-300 text-green-700 text-sm rounded-lg px-4 py-3 mb-6">
+  Settings saved.
+</div>
+{% endif %}
+
+<form method="post" action="/admin/settings" class="space-y-6">
+
+  <!-- Server -->
+  <div class="bg-white rounded-2xl shadow p-6">
+    <h3 class="text-base font-semibold text-gray-700 mb-4">Server</h3>
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div>
+        <label class="block text-sm font-medium text-gray-600 mb-1">Server URL</label>
+        <input name="server_url" type="url" value="{{ s.server_url }}"
+          placeholder="http://192.168.1.100:8080"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <p class="text-xs text-gray-400 mt-1">Used in QR codes for app setup.</p>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-600 mb-1">Registration Key</label>
+        <input name="registration_key" type="text" value="{{ s.registration_key }}"
+          placeholder="leave blank to disable self-registration"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <p class="text-xs text-gray-400 mt-1">Devices need this key to self-register via API.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Password -->
+  <div class="bg-white rounded-2xl shadow p-6">
+    <h3 class="text-base font-semibold text-gray-700 mb-4">Admin Password</h3>
+    <div class="sm:max-w-xs">
+      <label class="block text-sm font-medium text-gray-600 mb-1">New Password</label>
+      <input name="new_password" type="password" placeholder="leave blank to keep current"
+        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+    </div>
+  </div>
+
+  <!-- InfluxDB -->
+  <div class="bg-white rounded-2xl shadow p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-base font-semibold text-gray-700">InfluxDB</h3>
+      <label class="flex items-center gap-2 cursor-pointer">
+        <input type="checkbox" name="influxdb_enabled" value="true"
+          {% if s.influxdb_enabled == "true" %}checked{% endif %}
+          class="w-4 h-4 accent-indigo-600">
+        <span class="text-sm text-gray-600">Enabled</span>
+      </label>
+    </div>
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div>
+        <label class="block text-sm font-medium text-gray-600 mb-1">URL</label>
+        <input name="influxdb_url" type="url" value="{{ s.influxdb_url }}"
+          placeholder="http://influxdb:8086"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-600 mb-1">Token</label>
+        <input name="influxdb_token" type="password" value="{{ s.influxdb_token }}"
+          placeholder="your-influxdb-token"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-600 mb-1">Org</label>
+        <input name="influxdb_org" type="text" value="{{ s.influxdb_org }}"
+          placeholder="myorg"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-600 mb-1">Bucket</label>
+        <input name="influxdb_bucket" type="text" value="{{ s.influxdb_bucket }}"
+          placeholder="ringbridge"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      </div>
+    </div>
+    <div class="mt-4 flex items-center gap-3">
+      <button type="button"
+        hx-post="/admin/settings/test/influx"
+        hx-target="#influx-test-result"
+        hx-swap="innerHTML"
+        class="text-sm border border-gray-300 hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors">
+        Test Connection
+      </button>
+      <span id="influx-test-result" class="text-sm"></span>
+    </div>
+  </div>
+
+  <!-- MQTT -->
+  <div class="bg-white rounded-2xl shadow p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-base font-semibold text-gray-700">MQTT</h3>
+      <label class="flex items-center gap-2 cursor-pointer">
+        <input type="checkbox" name="mqtt_enabled" value="true"
+          {% if s.mqtt_enabled == "true" %}checked{% endif %}
+          class="w-4 h-4 accent-indigo-600">
+        <span class="text-sm text-gray-600">Enabled</span>
+      </label>
+    </div>
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div>
+        <label class="block text-sm font-medium text-gray-600 mb-1">Host</label>
+        <input name="mqtt_host" type="text" value="{{ s.mqtt_host }}"
+          placeholder="192.168.1.50"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-600 mb-1">Port</label>
+        <input name="mqtt_port" type="number" value="{{ s.mqtt_port or '1883' }}"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-600 mb-1">Username</label>
+        <input name="mqtt_username" type="text" value="{{ s.mqtt_username }}"
+          placeholder="optional"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-600 mb-1">Password</label>
+        <input name="mqtt_password" type="password" value="{{ s.mqtt_password }}"
+          placeholder="optional"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      </div>
+      <div class="sm:col-span-2">
+        <label class="block text-sm font-medium text-gray-600 mb-1">Topic Prefix</label>
+        <input name="mqtt_topic_prefix" type="text" value="{{ s.mqtt_topic_prefix or 'ringbridge' }}"
+          placeholder="ringbridge"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <p class="text-xs text-gray-400 mt-1">
+          Data published as <code class="bg-gray-100 px-1 rounded">{prefix}/{device_id}/{type}</code>.
+          Home Assistant discovery uses <code class="bg-gray-100 px-1 rounded">homeassistant/sensor/…</code>.
+        </p>
+      </div>
+    </div>
+    <div class="mt-4 flex items-center gap-3">
+      <button type="button"
+        hx-post="/admin/settings/test/mqtt"
+        hx-target="#mqtt-test-result"
+        hx-swap="innerHTML"
+        class="text-sm border border-gray-300 hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors">
+        Test Connection
+      </button>
+      <span id="mqtt-test-result" class="text-sm"></span>
+    </div>
+  </div>
+
+  <!-- Save -->
+  <div class="flex justify-end">
+    <button type="submit"
+      class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-2 rounded-lg transition-colors">
+      Save Settings
+    </button>
+  </div>
+
+</form>
+{% endblock %}

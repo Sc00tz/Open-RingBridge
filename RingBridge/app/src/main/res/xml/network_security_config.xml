@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Allows cleartext HTTP so the user can point RingBridge at a local
+     Home Assistant instance (e.g. http://homeassistant.local:8123).
+     HTTPS targets work without any special config. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

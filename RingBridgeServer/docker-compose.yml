@@ -1,0 +1,13 @@
+services:
+  ringbridge:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data
+    environment:
+      - SERVER_URL=${SERVER_URL:-http://192.168.62.65:8080}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme}
+      - REGISTRATION_KEY=${REGISTRATION_KEY:-changeme}
+      - SESSION_SECRET=${SESSION_SECRET:-change-this-secret-in-production}
+    restart: unless-stopped

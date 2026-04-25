@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="card_bg">#FF1E1E1E</color>
+    <color name="section_label_color">#FF888888</color>
+
+    <!-- Metric status colors — same in both modes -->
+    <color name="status_good">#FF43A047</color>
+    <color name="status_caution">#FFF9A825</color>
+    <color name="status_alert">#FFE53935</color>
+</resources>
