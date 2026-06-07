@@ -1,6 +1,7 @@
 package dev.ringbridge
 
 import android.content.pm.PackageManager
+import android.content.res.ColorStateList
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -12,6 +13,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import dev.ringbridge.databinding.FragmentHomeBinding
+import dev.ringbridge.databinding.ViewMetricCardBinding
 import dev.ringbridge.db.RingDatabase
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -22,12 +24,23 @@ class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
 
-    private val permissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { results ->
-        if (results.values.all { it }) RingService.start(requireContext())
-        else binding.tvStatus.text = "Bluetooth permission required"
-    }
+    /**
+     * Static description of each metric card: which sensor type it shows, its label,
+     * unit, accent colour, the detail-screen type to open on tap, and how to format
+     * the latest value. Drives both binding and the tap-through to MetricDetailActivity.
+     */
+    private data class MetricSpec(
+        val type: String,
+        val label: String,
+        val unit: String,
+        val accentRes: Int,
+        val detailType: String,
+        val detailLabel: String,
+        val format: (Double) -> String = { it.toLong().toString() },
+    )
+
+    /** Bind a MetricSpec to one of the included card layouts. */
+    private fun cardBinding(card: View) = ViewMetricCardBinding.bind(card)
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -43,40 +56,37 @@ class HomeFragment : Fragment() {
 
         binding.btnToggle.setOnClickListener { toggleService() }
 
-        // Make readiness card clickable → history
+        // Readiness strip → HRV history (its primary input)
         binding.cardReadiness.isClickable = true
         binding.cardReadiness.isFocusable = true
         binding.cardReadiness.setOnClickListener {
-            startActivity(
-                android.content.Intent(requireContext(), MetricDetailActivity::class.java)
-                    .putExtra("type", "hrv")
-                    .putExtra("label", "Readiness")
-            )
+            openDetail("hrv", "Readiness")
+        }
+
+        // Apply static label/unit/accent/tap to each card once.
+        for ((card, spec) in cards()) {
+            val b = cardBinding(card)
+            b.metricLabel.text = spec.label
+            b.metricUnit.text = spec.unit
+            val accent = ContextCompat.getColor(requireContext(), spec.accentRes)
+            b.metricDot.backgroundTintList = ColorStateList.valueOf(accent)
+            b.metricSparkline.accentColor = accent
+            b.root.setOnClickListener { openDetail(spec.detailType, spec.detailLabel) }
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            RingService.state.collect { state ->
-                updateStatusCard(state)
-            }
+            RingService.state.collect { state -> if (!isHidden) updateStatusCard(state) }
         }
-
         viewLifecycleOwner.lifecycleScope.launch {
             RingService.statusLabel.collect { label ->
-                if (label.isNotEmpty()) binding.tvStatus.text = label
+                if (!isHidden && label.isNotEmpty()) binding.tvStatus.text = label
             }
         }
-
+        // Live values update the card hero numbers (skip work while hidden).
         viewLifecycleOwner.lifecycleScope.launch {
-            RingService.readings.collect { map ->
-                // Skip view work while this tab is hidden (fragments are hide/shown,
-                // not destroyed, so the collector stays active in the background).
-                if (isHidden) return@collect
-                updateMiniTiles(map)
-            }
+            RingService.readings.collect { map -> if (!isHidden) updateCardValues(map) }
         }
-
-        // Readiness only changes when HRV does — recomputing it (two DB queries)
-        // on every ~1 Hz readings emission was wasteful. Collect HRV distinctly.
+        // Readiness recomputes only when HRV changes.
         viewLifecycleOwner.lifecycleScope.launch {
             RingService.readings
                 .map { it["hrv"]?.first }
@@ -84,25 +94,18 @@ class HomeFragment : Fragment() {
                 .collect { hrv -> if (!isHidden) refreshReadiness(hrv) }
         }
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            RingService.latestSleep.collect { session ->
-                refreshReadiness(RingService.readings.value["hrv"]?.first)
-            }
-        }
-
-        // Prime readiness from DB on first load
-        viewLifecycleOwner.lifecycleScope.launch {
-            refreshReadiness(RingService.readings.value["hrv"]?.first)
-        }
+        // Initial paint from current state + DB.
+        updateCardValues(RingService.readings.value)
+        refreshReadiness(RingService.readings.value["hrv"]?.first)
+        refreshSparklines()
     }
 
     override fun onHiddenChanged(hidden: Boolean) {
         super.onHiddenChanged(hidden)
-        // Re-seed when this tab becomes visible — collectors skipped updates while hidden.
         if (!hidden && _binding != null) {
-            val map = RingService.readings.value
-            updateMiniTiles(map)
-            refreshReadiness(map["hrv"]?.first)
+            updateCardValues(RingService.readings.value)
+            refreshReadiness(RingService.readings.value["hrv"]?.first)
+            refreshSparklines()
         }
     }
 
@@ -111,14 +114,32 @@ class HomeFragment : Fragment() {
         _binding = null
     }
 
-    // ── Service control ───────────────────────────────────────────────────────
+    // ── Card specs ────────────────────────────────────────────────────────────
+
+    /** Pairs each included card view with its spec. Order matches the grid layout. */
+    private fun cards(): List<Pair<View, MetricSpec>> = listOf(
+        binding.cardHr.root to MetricSpec("hr", "Heart Rate", "bpm", R.color.accent_hr, "hr", "Heart Rate"),
+        binding.cardSpo2.root to MetricSpec("spo2", "SpO₂", "%", R.color.accent_spo2, "spo2", "SpO₂"),
+        binding.cardBp.root to MetricSpec("systolic", "Blood Pressure", "mmHg", R.color.accent_bp, "systolic", "Blood Pressure"),
+        binding.cardHrv.root to MetricSpec("hrv", "HRV", "ms", R.color.accent_hrv, "hrv", "HRV"),
+        binding.cardStress.root to MetricSpec("stress", "Stress", "", R.color.accent_stress, "stress", "Stress"),
+        binding.cardGlucose.root to MetricSpec("blood_glucose", "Blood Glucose", "mmol/L", R.color.accent_glucose, "blood_glucose", "Blood Glucose", { "%.1f".format(it) }),
+        binding.cardSteps.root to MetricSpec("steps", "Steps", "", R.color.accent_steps, "steps", "Steps", { "%,d".format(it.toLong()) }),
+        binding.cardBattery.root to MetricSpec("battery", "Battery", "%", R.color.accent_battery, "battery", "Battery"),
+    )
+
+    // ── Service control ─────────────────────────────────────────────────────────
 
     private fun toggleService() {
-        if (RingService.state.value == RingService.State.IDLE) {
-            requestPermissionsAndStart()
-        } else {
-            RingService.stop(requireContext())
-        }
+        if (RingService.state.value == RingService.State.IDLE) requestPermissionsAndStart()
+        else RingService.stop(requireContext())
+    }
+
+    private val permissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        if (results.values.all { it }) RingService.start(requireContext())
+        else binding.tvStatus.text = "Bluetooth permission required"
     }
 
     private fun requestPermissionsAndStart() {
@@ -143,6 +164,14 @@ class HomeFragment : Fragment() {
         }
     }
 
+    private fun openDetail(type: String, label: String) {
+        startActivity(
+            android.content.Intent(requireContext(), MetricDetailActivity::class.java)
+                .putExtra("type", type)
+                .putExtra("label", label)
+        )
+    }
+
     // ── Status card ───────────────────────────────────────────────────────────
 
     private fun updateStatusCard(state: RingService.State) {
@@ -159,12 +188,44 @@ class HomeFragment : Fragment() {
         binding.btnToggle.text = if (state == RingService.State.IDLE) "Start" else "Stop"
     }
 
-    // ── Mini tiles ────────────────────────────────────────────────────────────
+    // ── Card hero values ──────────────────────────────────────────────────────
 
-    private fun updateMiniTiles(map: Map<String, Pair<Double, Long>>) {
-        map["hr"]?.first?.let      { binding.tvHrMini.text   = it.toLong().toString() }
-        map["spo2"]?.first?.let    { binding.tvSpo2Mini.text = it.toLong().toString() }
-        map["battery"]?.first?.let { binding.tvBattMini.text = it.toLong().toString() }
+    private fun updateCardValues(map: Map<String, Pair<Double, Long>>) {
+        for ((card, spec) in cards()) {
+            val b = cardBinding(card)
+            if (spec.type == "systolic") {
+                // BP card shows sys/dia composite.
+                val sys = map["systolic"]?.first
+                val dia = map["diastolic"]?.first
+                b.metricValue.text = if (sys != null && dia != null)
+                    "${sys.toLong()}/${dia.toLong()}" else "—"
+            } else {
+                val v = map[spec.type]?.first
+                b.metricValue.text = if (v != null) spec.format(v) else "—"
+            }
+        }
+    }
+
+    // ── Sparklines (from DB history) ────────────────────────────────────────────
+
+    private fun refreshSparklines() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val dao = RingDatabase.get(requireContext()).readings()
+            val since = System.currentTimeMillis() - 24 * 3_600_000L
+            for ((card, spec) in cards()) {
+                // BP sparkline tracks systolic; battery/steps trend over the day too.
+                val series = dao.getHistory(spec.type, since)
+                    .map { it.value.toFloat() }
+                    .let { if (it.size > 40) it.takeLast(40) else it }   // cap points for a clean preview
+                val b = cardBinding(card)
+                if (series.size >= 3) {
+                    b.metricSparkline.values = series
+                    b.metricSparkline.visibility = View.VISIBLE
+                } else {
+                    b.metricSparkline.visibility = View.GONE
+                }
+            }
+        }
     }
 
     // ── Readiness ─────────────────────────────────────────────────────────────
@@ -172,20 +233,24 @@ class HomeFragment : Fragment() {
     private fun refreshReadiness(hrv: Double?) {
         viewLifecycleOwner.lifecycleScope.launch {
             val since = System.currentTimeMillis() - 24 * 3_600_000L
-            val restingHr = RingDatabase.get(requireContext())
-                .readings()
-                .getMin("hr", since)
-            val latestSleep = RingDatabase.get(requireContext())
-                .sleepSessions()
-                .getLatest()
+            val db = RingDatabase.get(requireContext())
+            val restingHr = db.readings().getMin("hr", since)
+            val latestSleep = db.sleepSessions().getLatest()
             val score = ReadinessEngine.compute(hrv, restingHr, latestSleep)
-            updateReadinessCard(score)
+            updateReadinessCard(score, hrv, restingHr, latestSleep)
         }
     }
 
-    private fun updateReadinessCard(score: ReadinessEngine.Score) {
+    private fun updateReadinessCard(
+        score: ReadinessEngine.Score,
+        hrv: Double?,
+        restingHr: Double?,
+        sleep: dev.ringbridge.db.SleepSession?,
+    ) {
+        if (_binding == null) return
         binding.gaugeReadiness.score = score.total
-        binding.tvReadinessLabel.text = score.label
+
+        binding.tvReadinessLabel.text = if (score.total < 0) "—" else "${score.total} · ${score.label}"
 
         val colorRes = when {
             score.total < 0   -> null
@@ -193,10 +258,19 @@ class HomeFragment : Fragment() {
             score.total >= 50 -> R.color.status_caution
             else              -> R.color.status_alert
         }
-        if (colorRes != null) {
-            binding.tvReadinessLabel.setTextColor(ContextCompat.getColor(requireContext(), colorRes))
-        } else {
-            binding.tvReadinessLabel.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray))
+        binding.tvReadinessLabel.setTextColor(
+            ContextCompat.getColor(requireContext(), colorRes ?: android.R.color.darker_gray)
+        )
+
+        // Sub-line: HRV · RHR · sleep duration, omitting whichever is missing.
+        val parts = mutableListOf<String>()
+        hrv?.let { parts += "HRV ${it.toLong()}" }
+        restingHr?.let { parts += "RHR ${it.toLong()}" }
+        sleep?.takeIf { it.totalSleepMs > 0 }?.let {
+            val h = it.totalSleepMs / 3_600_000L
+            val m = (it.totalSleepMs % 3_600_000L) / 60_000L
+            parts += if (h > 0) "${h}h ${m}m" else "${m}m"
         }
+        binding.tvReadinessSub.text = parts.joinToString("  ·  ")
     }
 }

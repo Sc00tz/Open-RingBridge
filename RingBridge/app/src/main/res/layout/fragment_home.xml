@@ -3,7 +3,8 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -16,9 +17,9 @@
             android:id="@+id/cardStatus"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
+            android:layout_marginBottom="10dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
             app:cardBackgroundColor="@color/status_idle">
 
             <LinearLayout
@@ -64,175 +65,128 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- ── Readiness Score Card ─────────────────────────────────────────── -->
+        <!-- ── Compact readiness strip ──────────────────────────────────────── -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardReadiness"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
+            android:layout_marginBottom="10dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
             app:cardBackgroundColor="@color/card_bg">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingTop="16dp"
-                android:paddingBottom="12dp"
-                android:gravity="center">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="READINESS"
-                    android:textSize="11sp"
-                    android:letterSpacing="0.15"
-                    android:textColor="@color/section_label_color" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="16dp">
 
                 <dev.ringbridge.ReadinessGaugeView
                     android:id="@+id/gaugeReadiness"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:paddingStart="24dp"
-                    android:paddingEnd="24dp" />
+                    android:layout_width="96dp"
+                    android:layout_height="96dp" />
 
-                <TextView
-                    android:id="@+id/tvReadinessLabel"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text=""
-                    android:textSize="15sp"
-                    android:textColor="@color/section_label_color"
-                    android:layout_marginTop="4dp" />
+                    android:layout_weight="1"
+                    android:layout_marginStart="16dp"
+                    android:orientation="vertical">
 
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="READINESS"
+                        android:textSize="11sp"
+                        android:letterSpacing="0.15"
+                        android:textColor="@color/section_label_color" />
+
+                    <TextView
+                        android:id="@+id/tvReadinessLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="—"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:textColor="?android:attr/textColorPrimary"
+                        android:layout_marginTop="2dp" />
+
+                    <TextView
+                        android:id="@+id/tvReadinessSub"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text=""
+                        android:textSize="12sp"
+                        android:textColor="@color/section_label_color"
+                        android:layout_marginTop="4dp" />
+
+                </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- ── Quick metrics strip (HR + SpO2 summary) ─────────────────────── -->
+        <!-- ── Metric grid (2 columns) ──────────────────────────────────────── -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
+            android:baselineAligned="false"
             android:layout_marginBottom="8dp">
 
-            <!-- HR mini -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardHrMini"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginEnd="4dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp"
-                app:cardBackgroundColor="@color/card_bg">
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="12dp"
-                    android:gravity="center">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="❤"
-                        android:textSize="18sp"
-                        android:textColor="@color/accent_hr" />
-                    <TextView
-                        android:id="@+id/tvHrMini"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="—"
-                        android:textSize="22sp"
-                        android:textStyle="bold"
-                        android:textColor="?android:attr/textColorPrimary" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="bpm"
-                        android:textSize="10sp"
-                        android:textColor="@color/section_label_color" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+            <include layout="@layout/view_metric_card" android:id="@+id/cardHr"
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" />
+            <Space android:layout_width="8dp" android:layout_height="1dp" />
+            <include layout="@layout/view_metric_card" android:id="@+id/cardSpo2"
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" />
+        </LinearLayout>
 
-            <!-- SpO2 mini -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardSpo2Mini"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="4dp"
-                android:layout_marginEnd="4dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp"
-                app:cardBackgroundColor="@color/card_bg">
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="12dp"
-                    android:gravity="center">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="💧"
-                        android:textSize="18sp" />
-                    <TextView
-                        android:id="@+id/tvSpo2Mini"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="—"
-                        android:textSize="22sp"
-                        android:textStyle="bold"
-                        android:textColor="?android:attr/textColorPrimary" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="SpO₂ %"
-                        android:textSize="10sp"
-                        android:textColor="@color/section_label_color" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:baselineAligned="false"
+            android:layout_marginBottom="8dp">
 
-            <!-- Battery mini -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardBattMini"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="4dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp"
-                app:cardBackgroundColor="@color/card_bg">
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="12dp"
-                    android:gravity="center">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="🔋"
-                        android:textSize="18sp" />
-                    <TextView
-                        android:id="@+id/tvBattMini"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="—"
-                        android:textSize="22sp"
-                        android:textStyle="bold"
-                        android:textColor="?android:attr/textColorPrimary" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Battery %"
-                        android:textSize="10sp"
-                        android:textColor="@color/section_label_color" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+            <include layout="@layout/view_metric_card" android:id="@+id/cardBp"
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" />
+            <Space android:layout_width="8dp" android:layout_height="1dp" />
+            <include layout="@layout/view_metric_card" android:id="@+id/cardHrv"
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" />
+        </LinearLayout>
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:baselineAligned="false"
+            android:layout_marginBottom="8dp">
+
+            <include layout="@layout/view_metric_card" android:id="@+id/cardStress"
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" />
+            <Space android:layout_width="8dp" android:layout_height="1dp" />
+            <include layout="@layout/view_metric_card" android:id="@+id/cardGlucose"
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:baselineAligned="false">
+
+            <include layout="@layout/view_metric_card" android:id="@+id/cardSteps"
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" />
+            <Space android:layout_width="8dp" android:layout_height="1dp" />
+            <include layout="@layout/view_metric_card" android:id="@+id/cardBattery"
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" />
         </LinearLayout>
 
     </LinearLayout>
