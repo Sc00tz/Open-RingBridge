@@ -23,6 +23,12 @@ SENSOR_META: dict[str, dict] = {
     "resp_rate": {"name": "Respiratory Rate",            "unit": "brpm",  "icon": "mdi:lungs"},
     "battery":   {"name": "Battery",                     "unit": "%",     "icon": "mdi:battery",
                   "device_class": "battery", "state_class": "measurement"},
+    "sleep_total": {"name": "Sleep (Total)",             "unit": "min",   "icon": "mdi:sleep"},
+    "sleep_deep":  {"name": "Sleep (Deep)",              "unit": "min",   "icon": "mdi:sleep"},
+    "sleep_light": {"name": "Sleep (Light)",             "unit": "min",   "icon": "mdi:sleep"},
+    "sleep_rem":   {"name": "Sleep (REM)",               "unit": "min",   "icon": "mdi:sleep"},
+    "sleep_nap":   {"name": "Sleep (Nap)",               "unit": "min",   "icon": "mdi:power-sleep"},
+    "sleep_wake":  {"name": "Sleep (Awake)",             "unit": "min",   "icon": "mdi:sleep-off"},
 }
 
 

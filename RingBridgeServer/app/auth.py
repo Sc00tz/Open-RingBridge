@@ -35,6 +35,7 @@ def get_registration_key(db: Session) -> str:
 
 
 def get_admin_password(db: Session) -> str:
-    """Return the current admin password hash (plain text stored for now; hashed in Phase 2)."""
+    """Return the stored admin password value (a bcrypt hash, or a legacy plain-text
+    value on deployments created before hashing — see app.security.verify_password)."""
     setting = db.query(Setting).filter(Setting.key == "admin_password").first()
     return setting.value if setting else os.getenv("ADMIN_PASSWORD", "changeme")

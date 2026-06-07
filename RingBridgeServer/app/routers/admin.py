@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from app.auth import get_admin_password
 from app.database import get_db
 from app.models import Device, Reading, Setting
+from app.security import hash_password, is_hashed, verify_password
 
 router    = APIRouter(prefix="/admin")
 templates = Jinja2Templates(directory="app/templates")
@@ -73,7 +74,11 @@ def login_page(request: Request):
 
 @router.post("/login", response_class=HTMLResponse)
 def login(request: Request, password: str = Form(...), db: Session = Depends(get_db)):
-    if password == get_admin_password(db):
+    stored = get_admin_password(db)
+    if verify_password(password, stored):
+        # Transparently upgrade a legacy plain-text password to a bcrypt hash.
+        if not is_hashed(stored):
+            save_setting(db, "admin_password", hash_password(password))
         request.session["authenticated"] = True
         return RedirectResponse("/admin/", status_code=302)
     return templates.TemplateResponse("login.html", ctx(request, error="Incorrect password"))
@@ -219,7 +224,7 @@ def save_settings(
     save_setting(db, "mqtt_topic_prefix", mqtt_topic_prefix.strip() or "ringbridge")
 
     if new_password.strip():
-        save_setting(db, "admin_password", new_password.strip())
+        save_setting(db, "admin_password", hash_password(new_password.strip()))
 
     current = {k: get_setting(db, k) for k in SETTING_KEYS}
     return templates.TemplateResponse(
