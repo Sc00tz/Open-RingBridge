@@ -117,7 +117,14 @@ History pull is a two-step handshake:
 2. Ring replies with the matching **response** command (may be chunked)
 3. App sends **delete** command to clear synced data from ring storage
 
-### 5a. AllHistory — Comprehensive daily snapshots
+> **R01L note:** The combined AllHistory (`0x0509`) and BodyHistory (`0x0533`)
+> commands below are part of the YCBT SDK but are **not supported by the R01L
+> firmware** — it returns no data for them. RingBridge instead uses the per-category
+> history commands (Sport `0x0502`, Sleep `0x0504`, Heart `0x0506`, Blood `0x0508`),
+> which is what the official LivUp app uses. See `Ring_Protocol_Documentation.md` §7.
+> The layouts below are retained as SDK reference.
+
+### 5a. AllHistory — Comprehensive daily snapshots (SDK reference; not used on R01L)
 
 | Step     | Command  | Notes                              |
 |----------|----------|------------------------------------|
@@ -145,7 +152,7 @@ History pull is a two-step handshake:
 | 17      | Glucose raw  | uint8 ÷ 10 → mmol/L               |
 | 18–19   | Reserved     |                                    |
 
-### 5b. BodyHistory — Stress / HRV / autonomic nervous system
+### 5b. BodyHistory — Stress / HRV / autonomic nervous system (SDK reference; not used on R01L)
 
 | Step     | Command  | Notes                              |
 |----------|----------|------------------------------------|
@@ -304,9 +311,12 @@ Real-time and history callbacks return a `HashMap<String, Any>`. Known keys:
 
 | Feature              | Status                                                      |
 |----------------------|-------------------------------------------------------------|
-| AllHistory (`0x0509` → `0x0518`) | ✅ Working — HR, BP, SpO₂, glucose, HRV |
-| BodyHistory (`0x0533` → `0x0534`) | ✅ Working — stress, HRV, SDNN, VO₂max |
-| Sleep history (`0x0504` → `0x0513`) | ⚠️ Implemented in RingBridge — needs device test |
+| Sport history (`0x0502` → `0x0511`) | ✅ Working — steps, distance, calories |
+| Sleep history (`0x0504` → `0x0513`) | ✅ Working — sessions with per-stage records |
+| Heart history (`0x0506` → `0x0515`) | ✅ Working — HR samples |
+| Blood history (`0x0508` → `0x0517`) | ✅ Working — systolic / diastolic |
+| AllHistory (`0x0509` → `0x0518`) | ❌ Not supported by firmware — use per-category commands |
+| BodyHistory (`0x0533` → `0x0534`) | ❌ Not supported by firmware — HRV/stress via real-time `0x0610` |
 | Real-time comprehensive (`0x060A`) | ✅ Working — all metrics ~1 Hz |
 | Real-time BP (`0x0603`)  | ✅ Working — includes HRV at byte 3                |
 | Real-time HRV/stress (`0x0610`) | ✅ Implemented — requires ECG emotional mode    |
