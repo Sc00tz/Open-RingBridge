@@ -5,6 +5,8 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import com.github.mikephil.charting.components.Legend
+import com.github.mikephil.charting.components.LegendEntry
 import com.github.mikephil.charting.components.LimitLine
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.Entry
@@ -384,8 +386,10 @@ class MetricDetailActivity : AppCompatActivity() {
             }
             if (current.isNotEmpty()) segments += current
             val showDots = readings.size <= 60
-            return segments.map { entries ->
-                LineDataSet(entries, seriesLabel).apply {
+            return segments.mapIndexed { index, entries ->
+                // Only the first segment carries the series label; the rest use an empty
+                // label so the legend shows "Systolic"/"Diastolic" once, not once per gap.
+                LineDataSet(entries, if (index == 0) seriesLabel else "").apply {
                     setDrawCircles(showDots)
                     setDrawCircleHole(false)
                     circleRadius   = if (showDots) 3.5f else 2f
@@ -425,7 +429,16 @@ class MetricDetailActivity : AppCompatActivity() {
             }
         }
 
-        chart.legend.isEnabled = true
+        // Explicit two-entry legend (Systolic/Diastolic) so gap-split segments don't
+        // each add their own entry. setCustom() also disables auto-generation.
+        chart.legend.apply {
+            isEnabled = true
+            textColor = Color.GRAY
+            setCustom(listOf(
+                LegendEntry().apply { label = "Systolic";  formColor = sysColor; form = Legend.LegendForm.CIRCLE },
+                LegendEntry().apply { label = "Diastolic"; formColor = diaColor; form = Legend.LegendForm.CIRCLE },
+            ))
+        }
         chart.data = LineData(datasets)
         chart.animateX(300)
         chart.invalidate()
