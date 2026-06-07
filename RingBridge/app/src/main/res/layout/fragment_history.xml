@@ -24,8 +24,8 @@
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
             app:cardBackgroundColor="@color/card_bg">
 
             <LinearLayout
@@ -43,8 +43,9 @@
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
                     android:background="?attr/selectableItemBackground">
-                    <View android:layout_width="4dp" android:layout_height="32dp"
-                        android:background="@color/accent_hr" android:layout_marginEnd="14dp" />
+                    <View android:layout_width="8dp" android:layout_height="8dp"
+                        android:background="@drawable/dot_accent" android:backgroundTint="@color/accent_hr"
+                        android:layout_marginEnd="14dp" />
                     <TextView android:layout_width="0dp" android:layout_height="wrap_content"
                         android:layout_weight="1" android:text="Heart Rate"
                         android:textSize="15sp" android:textColor="?android:attr/textColorPrimary" />
@@ -68,8 +69,9 @@
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
                     android:background="?attr/selectableItemBackground">
-                    <View android:layout_width="4dp" android:layout_height="32dp"
-                        android:background="@color/accent_spo2" android:layout_marginEnd="14dp" />
+                    <View android:layout_width="8dp" android:layout_height="8dp"
+                        android:background="@drawable/dot_accent" android:backgroundTint="@color/accent_spo2"
+                        android:layout_marginEnd="14dp" />
                     <TextView android:layout_width="0dp" android:layout_height="wrap_content"
                         android:layout_weight="1" android:text="SpO₂"
                         android:textSize="15sp" android:textColor="?android:attr/textColorPrimary" />
@@ -93,8 +95,9 @@
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
                     android:background="?attr/selectableItemBackground">
-                    <View android:layout_width="4dp" android:layout_height="32dp"
-                        android:background="@color/accent_bp" android:layout_marginEnd="14dp" />
+                    <View android:layout_width="8dp" android:layout_height="8dp"
+                        android:background="@drawable/dot_accent" android:backgroundTint="@color/accent_bp"
+                        android:layout_marginEnd="14dp" />
                     <TextView android:layout_width="0dp" android:layout_height="wrap_content"
                         android:layout_weight="1" android:text="Blood Pressure"
                         android:textSize="15sp" android:textColor="?android:attr/textColorPrimary" />
@@ -118,8 +121,9 @@
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
                     android:background="?attr/selectableItemBackground">
-                    <View android:layout_width="4dp" android:layout_height="32dp"
-                        android:background="@color/accent_hrv" android:layout_marginEnd="14dp" />
+                    <View android:layout_width="8dp" android:layout_height="8dp"
+                        android:background="@drawable/dot_accent" android:backgroundTint="@color/accent_hrv"
+                        android:layout_marginEnd="14dp" />
                     <TextView android:layout_width="0dp" android:layout_height="wrap_content"
                         android:layout_weight="1" android:text="HRV"
                         android:textSize="15sp" android:textColor="?android:attr/textColorPrimary" />
@@ -143,8 +147,9 @@
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
                     android:background="?attr/selectableItemBackground">
-                    <View android:layout_width="4dp" android:layout_height="32dp"
-                        android:background="@color/accent_stress" android:layout_marginEnd="14dp" />
+                    <View android:layout_width="8dp" android:layout_height="8dp"
+                        android:background="@drawable/dot_accent" android:backgroundTint="@color/accent_stress"
+                        android:layout_marginEnd="14dp" />
                     <TextView android:layout_width="0dp" android:layout_height="wrap_content"
                         android:layout_weight="1" android:text="Stress"
                         android:textSize="15sp" android:textColor="?android:attr/textColorPrimary" />
@@ -168,8 +173,9 @@
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
                     android:background="?attr/selectableItemBackground">
-                    <View android:layout_width="4dp" android:layout_height="32dp"
-                        android:background="@color/accent_glucose" android:layout_marginEnd="14dp" />
+                    <View android:layout_width="8dp" android:layout_height="8dp"
+                        android:background="@drawable/dot_accent" android:backgroundTint="@color/accent_glucose"
+                        android:layout_marginEnd="14dp" />
                     <TextView android:layout_width="0dp" android:layout_height="wrap_content"
                         android:layout_weight="1" android:text="Blood Glucose"
                         android:textSize="15sp" android:textColor="?android:attr/textColorPrimary" />
@@ -193,8 +199,9 @@
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
                     android:background="?attr/selectableItemBackground">
-                    <View android:layout_width="4dp" android:layout_height="32dp"
-                        android:background="@color/accent_resp" android:layout_marginEnd="14dp" />
+                    <View android:layout_width="8dp" android:layout_height="8dp"
+                        android:background="@drawable/dot_accent" android:backgroundTint="@color/accent_resp"
+                        android:layout_marginEnd="14dp" />
                     <TextView android:layout_width="0dp" android:layout_height="wrap_content"
                         android:layout_weight="1" android:text="Resp Rate"
                         android:textSize="15sp" android:textColor="?android:attr/textColorPrimary" />
@@ -218,8 +225,9 @@
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
                     android:background="?attr/selectableItemBackground">
-                    <View android:layout_width="4dp" android:layout_height="32dp"
-                        android:background="@color/accent_steps" android:layout_marginEnd="14dp" />
+                    <View android:layout_width="8dp" android:layout_height="8dp"
+                        android:background="@drawable/dot_accent" android:backgroundTint="@color/accent_steps"
+                        android:layout_marginEnd="14dp" />
                     <TextView android:layout_width="0dp" android:layout_height="wrap_content"
                         android:layout_weight="1" android:text="Steps"
                         android:textSize="15sp" android:textColor="?android:attr/textColorPrimary" />
@@ -243,8 +251,9 @@
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
                     android:background="?attr/selectableItemBackground">
-                    <View android:layout_width="4dp" android:layout_height="32dp"
-                        android:background="@color/accent_battery" android:layout_marginEnd="14dp" />
+                    <View android:layout_width="8dp" android:layout_height="8dp"
+                        android:background="@drawable/dot_accent" android:backgroundTint="@color/accent_battery"
+                        android:layout_marginEnd="14dp" />
                     <TextView android:layout_width="0dp" android:layout_height="wrap_content"
                         android:layout_weight="1" android:text="Battery"
                         android:textSize="15sp" android:textColor="?android:attr/textColorPrimary" />
@@ -268,8 +277,9 @@
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
                     android:background="?attr/selectableItemBackground">
-                    <View android:layout_width="4dp" android:layout_height="32dp"
-                        android:background="@color/accent_sleep" android:layout_marginEnd="14dp" />
+                    <View android:layout_width="8dp" android:layout_height="8dp"
+                        android:background="@drawable/dot_accent" android:backgroundTint="@color/accent_sleep"
+                        android:layout_marginEnd="14dp" />
                     <TextView android:layout_width="0dp" android:layout_height="wrap_content"
                         android:layout_weight="1" android:text="Sleep"
                         android:textSize="15sp" android:textColor="?android:attr/textColorPrimary" />

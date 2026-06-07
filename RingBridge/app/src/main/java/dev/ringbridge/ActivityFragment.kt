@@ -121,6 +121,10 @@ class ActivityFragment : Fragment() {
         binding.tvStepsGoal.text       = "/ %,d".format(goal)
         binding.progressSteps.max      = goal
         binding.progressSteps.progress = steps.toLong().coerceAtMost(goal.toLong()).toInt()
+
+        // Goal completion percentage for the third stat tile.
+        val pct = if (goal > 0) (steps / goal * 100).toInt().coerceIn(0, 999) else 0
+        binding.tvGoalPct.text = "$pct%"
     }
 
     // ── Sleep ─────────────────────────────────────────────────────────────────
