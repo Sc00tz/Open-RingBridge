@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Reusable vitals card. Included per-metric in fragment_vitals.xml with id overrides.
+  Shares the Home card chrome (rounded, flat, accent dot) but shows a status-colored
+  value, a unit, and a freshness timestamp instead of a sparkline.
+-->
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="0dp"
+    app:cardBackgroundColor="@color/card_bg">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="14dp">
+
+        <!-- Label row: accent dot + name -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <View
+                android:id="@+id/vitalDot"
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/dot_accent" />
+
+            <TextView
+                android:id="@+id/vitalLabel"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Metric"
+                android:textSize="12sp"
+                android:textColor="@color/section_label_color" />
+        </LinearLayout>
+
+        <!-- Hero value (status-colored at runtime) -->
+        <TextView
+            android:id="@+id/vitalValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="—"
+            android:textSize="30sp"
+            android:textStyle="bold"
+            android:textColor="?android:attr/textColorPrimary"
+            android:layout_marginTop="4dp" />
+
+        <!-- Unit + timestamp footer -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="2dp">
+
+            <TextView
+                android:id="@+id/vitalUnit"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text=""
+                android:textSize="11sp"
+                android:textColor="@color/section_label_color" />
+
+            <TextView
+                android:id="@+id/vitalTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textSize="10sp"
+                android:textColor="@color/section_label_color" />
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

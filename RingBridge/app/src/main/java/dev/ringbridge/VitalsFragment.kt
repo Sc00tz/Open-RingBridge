@@ -1,16 +1,16 @@
 package dev.ringbridge
 
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import com.google.android.material.card.MaterialCardView
 import dev.ringbridge.databinding.FragmentVitalsBinding
+import dev.ringbridge.databinding.ViewVitalsCardBinding
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -22,6 +22,17 @@ class VitalsFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val fmt = SimpleDateFormat("HH:mm", Locale.getDefault())
+
+    /** Static per-card config: type, label, unit, accent, detail target, value formatter. */
+    private data class VitalSpec(
+        val type: String,
+        val label: String,
+        val unit: String,
+        val accentRes: Int,
+        val detailType: String,
+        val detailLabel: String,
+        val decimals: Int = 0,
+    )
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -35,42 +46,30 @@ class VitalsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Card → history drill-down
-        fun metricClick(card: MaterialCardView, type: String, label: String) {
-            card.isClickable = true
-            card.isFocusable = true
-            card.setOnClickListener {
+        // Apply static label/unit/accent/tap once per card.
+        for ((card, spec) in cards()) {
+            val b = ViewVitalsCardBinding.bind(card)
+            b.vitalLabel.text = spec.label
+            b.vitalUnit.text = spec.unit
+            val accent = ContextCompat.getColor(requireContext(), spec.accentRes)
+            b.vitalDot.backgroundTintList = ColorStateList.valueOf(accent)
+            b.root.setOnClickListener {
                 startActivity(
                     Intent(requireContext(), MetricDetailActivity::class.java)
-                        .putExtra("type", type)
-                        .putExtra("label", label)
+                        .putExtra("type", spec.detailType)
+                        .putExtra("label", spec.detailLabel)
                 )
             }
         }
-        metricClick(binding.cardHr,      "hr",            "Heart Rate")
-        metricClick(binding.cardSpo2,    "spo2",          "SpO₂")
-        metricClick(binding.cardBp,      "systolic",      "Blood Pressure")
-        metricClick(binding.cardBattery, "battery",       "Battery")
-        metricClick(binding.cardGlucose, "blood_glucose", "Blood Glucose")
-        metricClick(binding.cardHrv,     "hrv",           "HRV")
-        metricClick(binding.cardStress,  "stress",        "Stress")
-        metricClick(binding.cardResp,    "resp_rate",     "Resp Rate")
 
         viewLifecycleOwner.lifecycleScope.launch {
-            RingService.readings.collect { map ->
-                // Skip view work while this tab is hidden (fragments are hide/shown,
-                // not destroyed, so the collector stays active in the background).
-                if (!isHidden) updateCards(map)
-            }
+            RingService.readings.collect { map -> if (!isHidden) updateCards(map) }
         }
-
-        // Seed with current values immediately
         updateCards(RingService.readings.value)
     }
 
     override fun onHiddenChanged(hidden: Boolean) {
         super.onHiddenChanged(hidden)
-        // Re-seed when this tab becomes visible — the collector skipped updates while hidden.
         if (!hidden && _binding != null) updateCards(RingService.readings.value)
     }
 
@@ -79,8 +78,45 @@ class VitalsFragment : Fragment() {
         _binding = null
     }
 
+    // ── Card specs ──────────────────────────────────────────────────────────────
+
+    private fun cards(): List<Pair<View, VitalSpec>> = listOf(
+        binding.cardHr.root      to VitalSpec("hr", "Heart Rate", "bpm", R.color.accent_hr, "hr", "Heart Rate"),
+        binding.cardSpo2.root    to VitalSpec("spo2", "SpO₂", "%", R.color.accent_spo2, "spo2", "SpO₂"),
+        binding.cardBp.root      to VitalSpec("systolic", "Blood Pressure", "mmHg", R.color.accent_bp, "systolic", "Blood Pressure"),
+        binding.cardBattery.root to VitalSpec("battery", "Battery", "%", R.color.accent_battery, "battery", "Battery"),
+        binding.cardGlucose.root to VitalSpec("blood_glucose", "Blood Glucose", "mmol/L", R.color.accent_glucose, "blood_glucose", "Blood Glucose", decimals = 1),
+        binding.cardHrv.root     to VitalSpec("hrv", "HRV", "ms", R.color.accent_hrv, "hrv", "HRV"),
+        binding.cardStress.root  to VitalSpec("stress", "Stress", "/ 100", R.color.accent_stress, "stress", "Stress"),
+        binding.cardResp.root    to VitalSpec("resp_rate", "Respiratory Rate", "brpm", R.color.accent_resp, "resp_rate", "Resp Rate", decimals = 1),
+    )
+
     // ── Card updates ──────────────────────────────────────────────────────────
 
+    private fun updateCards(map: Map<String, Pair<Double, Long>>) {
+        for ((card, spec) in cards()) {
+            val b = ViewVitalsCardBinding.bind(card)
+            if (spec.type == "systolic") {
+                val sys = map["systolic"]?.first
+                val dia = map["diastolic"]?.first
+                val ts  = map["systolic"]?.second
+                if (sys != null && dia != null) {
+                    b.vitalValue.text = "${sys.toLong()}/${dia.toLong()}"
+                    if (ts != null) b.vitalTime.text = fmt.format(Date(ts))
+                    statusColor("systolic", sys)?.let { b.vitalValue.setTextColor(it) }
+                }
+            } else {
+                val pair = map[spec.type] ?: continue
+                val (v, ts) = pair
+                b.vitalValue.text = if (spec.decimals == 0) v.toLong().toString()
+                                    else "%.${spec.decimals}f".format(v)
+                b.vitalTime.text = fmt.format(Date(ts))
+                statusColor(spec.type, v)?.let { b.vitalValue.setTextColor(it) }
+            }
+        }
+    }
+
+    /** Green / amber / red zone color for a metric value, or null if no zoning defined. */
     private fun statusColor(type: String, value: Double): Int? {
         val res = when (type) {
             "hr"      -> when {
@@ -116,38 +152,5 @@ class VitalsFragment : Fragment() {
             else -> null
         }
         return res?.let { ContextCompat.getColor(requireContext(), it) }
-    }
-
-    private fun tile(
-        type: String,
-        valueView: TextView,
-        timeView: TextView,
-        map: Map<String, Pair<Double, Long>>,
-        decimals: Int = 0
-    ) {
-        val (v, ts) = map[type] ?: return
-        valueView.text = if (decimals == 0) v.toLong().toString() else "%.${decimals}f".format(v)
-        timeView.text  = fmt.format(Date(ts))
-        statusColor(type, v)?.let { valueView.setTextColor(it) }
-    }
-
-    private fun updateCards(map: Map<String, Pair<Double, Long>>) {
-        tile("hr",            binding.tvHrValue,      binding.tvHrTime,      map)
-        tile("spo2",          binding.tvSpo2Value,    binding.tvSpo2Time,    map)
-        tile("hrv",           binding.tvHrvValue,     binding.tvHrvTime,     map)
-        tile("stress",        binding.tvStressValue,  binding.tvStressTime,  map)
-        tile("battery",       binding.tvBatteryValue, binding.tvBatteryTime, map)
-        tile("blood_glucose", binding.tvGlucoseValue, binding.tvGlucoseTime, map, decimals = 1)
-        tile("resp_rate",     binding.tvRespValue,    binding.tvRespTime,    map, decimals = 1)
-
-        // BP composite
-        val sys  = map["systolic"]?.first
-        val dia  = map["diastolic"]?.first
-        val bpTs = map["systolic"]?.second
-        if (sys != null && dia != null && bpTs != null) {
-            binding.tvBpValue.text = "${sys.toLong()}/${dia.toLong()}"
-            binding.tvBpTime.text  = fmt.format(Date(bpTs))
-            statusColor("systolic", sys)?.let { binding.tvBpValue.setTextColor(it) }
-        }
     }
 }

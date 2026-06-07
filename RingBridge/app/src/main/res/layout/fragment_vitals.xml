@@ -3,7 +3,8 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -19,7 +20,7 @@
             android:textSize="11sp"
             android:letterSpacing="0.15"
             android:textColor="@color/section_label_color"
-            android:layout_marginBottom="6dp"
+            android:layout_marginBottom="8dp"
             android:layout_marginStart="4dp" />
 
         <!-- Row: Heart Rate + SpO₂ -->
@@ -27,193 +28,35 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
+            android:baselineAligned="false"
             android:layout_marginBottom="8dp">
 
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardHr"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginEnd="4dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp"
-                app:cardBackgroundColor="@color/card_bg">
-                <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content">
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:paddingStart="18dp"
-                        android:paddingEnd="12dp"
-                        android:paddingTop="12dp"
-                        android:paddingBottom="12dp">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="Heart Rate" android:textSize="11sp" android:textColor="@color/section_label_color" />
-                        <TextView android:id="@+id/tvHrValue" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="—" android:textSize="32sp" android:textStyle="bold"
-                            android:textColor="?android:attr/textColorPrimary" android:layout_marginTop="2dp" />
-                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                            android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="2dp">
-                            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
-                                android:layout_weight="1" android:text="bpm" android:textSize="11sp" android:textColor="@color/section_label_color" />
-                            <TextView android:id="@+id/tvHrTime" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="" android:textSize="10sp" android:textColor="@color/section_label_color" />
-                        </LinearLayout>
-                    </LinearLayout>
-                    <View android:layout_width="4dp" android:layout_height="match_parent" android:background="@color/accent_hr" />
-                </FrameLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardSpo2"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="4dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp"
-                app:cardBackgroundColor="@color/card_bg">
-                <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content">
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:paddingStart="18dp"
-                        android:paddingEnd="12dp"
-                        android:paddingTop="12dp"
-                        android:paddingBottom="12dp">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="SpO&#x2082;" android:textSize="11sp" android:textColor="@color/section_label_color" />
-                        <TextView android:id="@+id/tvSpo2Value" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="—" android:textSize="32sp" android:textStyle="bold"
-                            android:textColor="?android:attr/textColorPrimary" android:layout_marginTop="2dp" />
-                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                            android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="2dp">
-                            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
-                                android:layout_weight="1" android:text="%" android:textSize="11sp" android:textColor="@color/section_label_color" />
-                            <TextView android:id="@+id/tvSpo2Time" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="" android:textSize="10sp" android:textColor="@color/section_label_color" />
-                        </LinearLayout>
-                    </LinearLayout>
-                    <View android:layout_width="4dp" android:layout_height="match_parent" android:background="@color/accent_spo2" />
-                </FrameLayout>
-            </com.google.android.material.card.MaterialCardView>
-
+            <include layout="@layout/view_vitals_card" android:id="@+id/cardHr"
+                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+            <Space android:layout_width="8dp" android:layout_height="1dp" />
+            <include layout="@layout/view_vitals_card" android:id="@+id/cardSpo2"
+                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
         </LinearLayout>
 
-        <!-- Row: Blood Pressure + Battery -->
+        <!-- Blood Pressure (full width — needs room for sys/dia) -->
+        <include layout="@layout/view_vitals_card" android:id="@+id/cardBp"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Row: Battery + Blood Glucose -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
+            android:baselineAligned="false"
             android:layout_marginBottom="8dp">
 
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardBp"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginEnd="4dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp"
-                app:cardBackgroundColor="@color/card_bg">
-                <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content">
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:paddingStart="18dp"
-                        android:paddingEnd="12dp"
-                        android:paddingTop="12dp"
-                        android:paddingBottom="12dp">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="Blood Pressure" android:textSize="11sp" android:textColor="@color/section_label_color" />
-                        <TextView android:id="@+id/tvBpValue" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="—" android:textSize="32sp" android:textStyle="bold"
-                            android:textColor="?android:attr/textColorPrimary" android:layout_marginTop="2dp" />
-                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                            android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="2dp">
-                            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
-                                android:layout_weight="1" android:text="mmHg" android:textSize="11sp" android:textColor="@color/section_label_color" />
-                            <TextView android:id="@+id/tvBpTime" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="" android:textSize="10sp" android:textColor="@color/section_label_color" />
-                        </LinearLayout>
-                    </LinearLayout>
-                    <View android:layout_width="4dp" android:layout_height="match_parent" android:background="@color/accent_bp" />
-                </FrameLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardBattery"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="4dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp"
-                app:cardBackgroundColor="@color/card_bg">
-                <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content">
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:paddingStart="18dp"
-                        android:paddingEnd="12dp"
-                        android:paddingTop="12dp"
-                        android:paddingBottom="12dp">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="Battery" android:textSize="11sp" android:textColor="@color/section_label_color" />
-                        <TextView android:id="@+id/tvBatteryValue" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="—" android:textSize="32sp" android:textStyle="bold"
-                            android:textColor="?android:attr/textColorPrimary" android:layout_marginTop="2dp" />
-                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                            android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="2dp">
-                            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
-                                android:layout_weight="1" android:text="%" android:textSize="11sp" android:textColor="@color/section_label_color" />
-                            <TextView android:id="@+id/tvBatteryTime" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="" android:textSize="10sp" android:textColor="@color/section_label_color" />
-                        </LinearLayout>
-                    </LinearLayout>
-                    <View android:layout_width="4dp" android:layout_height="match_parent" android:background="@color/accent_battery" />
-                </FrameLayout>
-            </com.google.android.material.card.MaterialCardView>
-
+            <include layout="@layout/view_vitals_card" android:id="@+id/cardBattery"
+                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+            <Space android:layout_width="8dp" android:layout_height="1dp" />
+            <include layout="@layout/view_vitals_card" android:id="@+id/cardGlucose"
+                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
         </LinearLayout>
-
-        <!-- Blood Glucose (full width) -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardGlucose"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/card_bg">
-            <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content">
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:paddingStart="18dp"
-                    android:paddingEnd="12dp"
-                    android:paddingTop="12dp"
-                    android:paddingBottom="12dp">
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="Blood Glucose" android:textSize="11sp" android:textColor="@color/section_label_color" />
-                    <TextView android:id="@+id/tvGlucoseValue" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="—" android:textSize="32sp" android:textStyle="bold"
-                        android:textColor="?android:attr/textColorPrimary" android:layout_marginTop="2dp" />
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="2dp">
-                        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
-                            android:layout_weight="1" android:text="mmol/L" android:textSize="11sp" android:textColor="@color/section_label_color" />
-                        <TextView android:id="@+id/tvGlucoseTime" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="" android:textSize="10sp" android:textColor="@color/section_label_color" />
-                    </LinearLayout>
-                </LinearLayout>
-                <View android:layout_width="4dp" android:layout_height="match_parent" android:background="@color/accent_glucose" />
-            </FrameLayout>
-        </com.google.android.material.card.MaterialCardView>
 
         <!-- ── Section: RECOVERY ───────────────────────────────────────────── -->
         <TextView
@@ -223,8 +66,8 @@
             android:textSize="11sp"
             android:letterSpacing="0.15"
             android:textColor="@color/section_label_color"
-            android:layout_marginTop="12dp"
-            android:layout_marginBottom="6dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
             android:layout_marginStart="4dp" />
 
         <!-- Row: HRV + Stress -->
@@ -232,114 +75,20 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
+            android:baselineAligned="false"
             android:layout_marginBottom="8dp">
 
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardHrv"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginEnd="4dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp"
-                app:cardBackgroundColor="@color/card_bg">
-                <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content">
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:paddingStart="18dp"
-                        android:paddingEnd="12dp"
-                        android:paddingTop="12dp"
-                        android:paddingBottom="12dp">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="HRV" android:textSize="11sp" android:textColor="@color/section_label_color" />
-                        <TextView android:id="@+id/tvHrvValue" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="—" android:textSize="32sp" android:textStyle="bold"
-                            android:textColor="?android:attr/textColorPrimary" android:layout_marginTop="2dp" />
-                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                            android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="2dp">
-                            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
-                                android:layout_weight="1" android:text="ms" android:textSize="11sp" android:textColor="@color/section_label_color" />
-                            <TextView android:id="@+id/tvHrvTime" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="" android:textSize="10sp" android:textColor="@color/section_label_color" />
-                        </LinearLayout>
-                    </LinearLayout>
-                    <View android:layout_width="4dp" android:layout_height="match_parent" android:background="@color/accent_hrv" />
-                </FrameLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardStress"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="4dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp"
-                app:cardBackgroundColor="@color/card_bg">
-                <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content">
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:paddingStart="18dp"
-                        android:paddingEnd="12dp"
-                        android:paddingTop="12dp"
-                        android:paddingBottom="12dp">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="Stress" android:textSize="11sp" android:textColor="@color/section_label_color" />
-                        <TextView android:id="@+id/tvStressValue" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="—" android:textSize="32sp" android:textStyle="bold"
-                            android:textColor="?android:attr/textColorPrimary" android:layout_marginTop="2dp" />
-                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                            android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="2dp">
-                            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
-                                android:layout_weight="1" android:text="/ 100" android:textSize="11sp" android:textColor="@color/section_label_color" />
-                            <TextView android:id="@+id/tvStressTime" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="" android:textSize="10sp" android:textColor="@color/section_label_color" />
-                        </LinearLayout>
-                    </LinearLayout>
-                    <View android:layout_width="4dp" android:layout_height="match_parent" android:background="@color/accent_stress" />
-                </FrameLayout>
-            </com.google.android.material.card.MaterialCardView>
-
+            <include layout="@layout/view_vitals_card" android:id="@+id/cardHrv"
+                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+            <Space android:layout_width="8dp" android:layout_height="1dp" />
+            <include layout="@layout/view_vitals_card" android:id="@+id/cardStress"
+                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
         </LinearLayout>
 
-        <!-- Resp Rate (full width) -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardResp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/card_bg">
-            <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content">
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:paddingStart="18dp"
-                    android:paddingEnd="12dp"
-                    android:paddingTop="12dp"
-                    android:paddingBottom="12dp">
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="Respiratory Rate" android:textSize="11sp" android:textColor="@color/section_label_color" />
-                    <TextView android:id="@+id/tvRespValue" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="—" android:textSize="32sp" android:textStyle="bold"
-                        android:textColor="?android:attr/textColorPrimary" android:layout_marginTop="2dp" />
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="2dp">
-                        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
-                            android:layout_weight="1" android:text="brpm" android:textSize="11sp" android:textColor="@color/section_label_color" />
-                        <TextView android:id="@+id/tvRespTime" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="" android:textSize="10sp" android:textColor="@color/section_label_color" />
-                    </LinearLayout>
-                </LinearLayout>
-                <View android:layout_width="4dp" android:layout_height="match_parent" android:background="@color/accent_resp" />
-            </FrameLayout>
-        </com.google.android.material.card.MaterialCardView>
+        <!-- Respiratory Rate (full width) -->
+        <include layout="@layout/view_vitals_card" android:id="@+id/cardResp"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp" />
 
     </LinearLayout>
 </ScrollView>
