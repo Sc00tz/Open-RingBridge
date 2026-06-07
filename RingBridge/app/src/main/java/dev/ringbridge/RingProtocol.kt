@@ -10,7 +10,8 @@ import java.util.Locale
 
 /**
  * All packet framing, parsing, and sensor decoding logic.
- * Pure Kotlin — no Android dependencies. Direct port of app.py.
+ * Pure Kotlin — no Android dependencies, so it is unit-testable on the JVM
+ * (see RingProtocolTest). Byte layouts are documented in Ring_Protocol_Documentation.md.
  */
 object RingProtocol {
 
@@ -230,102 +231,6 @@ object RingProtocol {
         val timestampMs: Long,
         val values: Map<String, Double>,
     )
-
-    /**
-     * Decode the BodyData history stream (0x0534), 28 bytes per record.
-     * Layout verified against DataUnpack.java case 51 (HistoryBodyData):
-     *   [0..3]   timestamp (LE, seconds since 2001-01-01)
-     *   [4]      loadIndexInteger
-     *   [5]      loadIndexFloat
-     *   [6]      hrvInteger
-     *   [7]      hrvFloat
-     *   [8]      pressureInteger  (stress tens digit)
-     *   [9]      pressureFloat    (stress units digit)  → stress = b[8]*10 + b[9]
-     *   [10]     bodyInteger
-     *   [11]     bodyFloat
-     *   [12]     sympatheticInteger
-     *   [13]     sympatheticFloat
-     *   [14..15] SDNN (2-byte LE)
-     *   [16]     VO2max
-     *   [17]     pnn50
-     *   [18..19] RMSSD (2-byte LE)
-     *   [20..21] LF   (2-byte LE)
-     *   [22..23] HF   (2-byte LE)
-     *   [24]     LF/HF × 10
-     *   [25..27] unused
-     */
-    fun decodeBodyHistory(raw: ByteArray): List<HistoryRecord> {
-        val records = mutableListOf<HistoryRecord>()
-        var offset = 0
-        while (offset + 28 <= raw.size) {
-            val d = raw
-            val tsRing = ByteBuffer.wrap(d, offset, 4).order(ByteOrder.LITTLE_ENDIAN).int.toLong()
-            val ts = (tsRing + SEC_2001) * 1000L
-            val stress  = d[offset + 8].u8() * 10 + d[offset + 9].u8()
-            val hrv     = d[offset + 6].u8()
-            val hrvFrac = d[offset + 7].u8()
-            val sdnn    = d[offset + 14].u8() or (d[offset + 15].u8() shl 8)
-            val vo2     = d[offset + 16].u8()
-            val rmssd   = d[offset + 18].u8() or (d[offset + 19].u8() shl 8)
-            records += HistoryRecord(
-                type        = "body",
-                timestampMs = ts,
-                values      = buildMap {
-                    put("stress", stress.toDouble())
-                    if (hrv > 0 || hrvFrac > 0) put("hrv", hrv + hrvFrac / 10.0)
-                    if (sdnn > 0) put("sdnn", sdnn.toDouble())
-                    if (vo2 > 0)  put("vo2max", vo2.toDouble())
-                    if (rmssd > 0) put("rmssd", rmssd.toDouble())
-                },
-            )
-            offset += 28
-        }
-        return records
-    }
-
-    /**
-     * Decode the AllHistory stream (0x0518), 20 bytes per record.
-     * Verified against DataUnpack.java case 9 (Health_HistoryAll).
-     */
-    fun decodeAllHistory(raw: ByteArray): List<HistoryRecord> {
-        val records = mutableListOf<HistoryRecord>()
-        var offset = 0
-        while (offset + 20 <= raw.size) {
-            val d = raw
-            val tsRing = ByteBuffer.wrap(d, offset, 4).order(ByteOrder.LITTLE_ENDIAN).int.toLong()
-            val ts = (tsRing + SEC_2001) * 1000L
-            val hr   = d[offset + 6].u8()
-            val sbp  = d[offset + 7].u8()
-            val dbp  = d[offset + 8].u8()
-            val spo2 = d[offset + 9].u8()
-            val resp = d[offset + 10].u8()
-            val hrv  = d[offset + 11].u8()
-            val gluc = d[offset + 17].u8()
-            val steps = d[offset + 4].u8() or (d[offset + 5].u8() shl 8)
-            val tempInt = d[offset + 13].u8()
-            val tempFrac = d[offset + 14].u8()
-
-            records += HistoryRecord(
-                type        = "health",
-                timestampMs = ts,
-                values      = buildMap {
-                    if (hr   > 0) put("hr",   hr.toDouble())
-                    if (sbp  > 0) put("systolic", sbp.toDouble())
-                    if (dbp  > 0) put("diastolic", dbp.toDouble())
-                    if (spo2 > 0) put("spo2", spo2.toDouble())
-                    if (resp > 0) put("resp_rate", resp.toDouble())
-                    if (hrv  > 0) put("hrv", hrv.toDouble())
-                    if (steps > 0) put("steps", steps.toDouble())
-                    if (gluc > 0) put("blood_glucose", gluc / 10.0)
-                    if (tempInt > 0 && tempFrac != 0xFF) {
-                        put("temperature", tempInt + tempFrac / 10.0)
-                    }
-                },
-            )
-            offset += 20
-        }
-        return records
-    }
 
     /**
      * Decode the Sport history stream (0x0511, requested via 0x0502).

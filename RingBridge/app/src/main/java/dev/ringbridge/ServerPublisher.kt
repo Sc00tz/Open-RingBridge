@@ -82,13 +82,20 @@ class ServerPublisher(private val context: Context) {
         }
     }
 
-    /** Remove old readings to keep the DB lean. */
+    /** Remove old readings and sleep data to keep the DB lean. */
     suspend fun prune(days: Int = 30) {
         val cutoff        = System.currentTimeMillis() - days * 86_400_000L
         val staleCutoff   = System.currentTimeMillis() - 7 * 86_400_000L   // 7 days
         dao.pruneOld(cutoff)
         dao.pruneStaleUnsynced(staleCutoff)   // abandon backlog that's too old to matter
-        Log.d(TAG, "Pruned sensor readings older than $days days (abandoned unsynced > 7d)")
+
+        // Sleep data follows the same retention policy as readings.
+        val sleepDao = db.sleepSessions()
+        sleepDao.pruneOld(cutoff)
+        sleepDao.pruneStaleUnsynced(staleCutoff)
+        db.sleepStages().pruneOld(cutoff)     // stages tied to sessions older than the window
+
+        Log.d(TAG, "Pruned sensor + sleep data older than $days days (abandoned unsynced > 7d)")
     }
 
     // ── Internal ──────────────────────────────────────────────────────────────

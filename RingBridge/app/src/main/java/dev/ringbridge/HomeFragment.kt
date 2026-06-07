@@ -13,6 +13,8 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import dev.ringbridge.databinding.FragmentHomeBinding
 import dev.ringbridge.db.RingDatabase
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class HomeFragment : Fragment() {
@@ -66,9 +68,20 @@ class HomeFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             RingService.readings.collect { map ->
+                // Skip view work while this tab is hidden (fragments are hide/shown,
+                // not destroyed, so the collector stays active in the background).
+                if (isHidden) return@collect
                 updateMiniTiles(map)
-                refreshReadiness(map["hrv"]?.first)
             }
+        }
+
+        // Readiness only changes when HRV does — recomputing it (two DB queries)
+        // on every ~1 Hz readings emission was wasteful. Collect HRV distinctly.
+        viewLifecycleOwner.lifecycleScope.launch {
+            RingService.readings
+                .map { it["hrv"]?.first }
+                .distinctUntilChanged()
+                .collect { hrv -> if (!isHidden) refreshReadiness(hrv) }
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -80,6 +93,16 @@ class HomeFragment : Fragment() {
         // Prime readiness from DB on first load
         viewLifecycleOwner.lifecycleScope.launch {
             refreshReadiness(RingService.readings.value["hrv"]?.first)
+        }
+    }
+
+    override fun onHiddenChanged(hidden: Boolean) {
+        super.onHiddenChanged(hidden)
+        // Re-seed when this tab becomes visible — collectors skipped updates while hidden.
+        if (!hidden && _binding != null) {
+            val map = RingService.readings.value
+            updateMiniTiles(map)
+            refreshReadiness(map["hrv"]?.first)
         }
     }
 

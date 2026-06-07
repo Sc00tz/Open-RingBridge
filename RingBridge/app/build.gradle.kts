@@ -18,8 +18,13 @@ android {
 
     buildTypes {
         release {
+            // Minification is off for now. The keep rules in proguard-rules.pro are
+            // already wired in so flipping this to true is safe when desired.
             isMinifyEnabled = false
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 
@@ -67,4 +72,8 @@ dependencies {
 
     // Nordic BLE Library — handles GATT complexity (INDICATE/NOTIFY, descriptor writes, queuing)
     implementation("no.nordicsemi.android:ble-ktx:2.7.5")
+
+    // ── Unit tests (JVM — no emulator needed) ─────────────────────────────────
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
 }

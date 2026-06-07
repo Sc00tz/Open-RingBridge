@@ -59,7 +59,8 @@ class HistoryFragment : Fragment() {
         // Live readings → update "last" column
         viewLifecycleOwner.lifecycleScope.launch {
             RingService.readings.collect { map ->
-                updateLastValues(map)
+                // Skip view work while this tab is hidden (see VitalsFragment).
+                if (!isHidden) updateLastValues(map)
             }
         }
 
@@ -90,6 +91,11 @@ class HistoryFragment : Fragment() {
 
         // Seed immediately
         updateLastValues(RingService.readings.value)
+    }
+
+    override fun onHiddenChanged(hidden: Boolean) {
+        super.onHiddenChanged(hidden)
+        if (!hidden && _binding != null) updateLastValues(RingService.readings.value)
     }
 
     override fun onDestroyView() {

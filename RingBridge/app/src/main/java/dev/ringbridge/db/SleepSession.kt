@@ -55,6 +55,14 @@ interface SleepSessionDao {
 
     @Query("UPDATE sleep_sessions SET synced = 1 WHERE startMs IN (:ids)")
     suspend fun markSynced(ids: List<Long>)
+
+    /** Remove synced sessions that started before [cutoff] ms epoch. */
+    @Query("DELETE FROM sleep_sessions WHERE startMs < :cutoff AND synced = 1")
+    suspend fun pruneOld(cutoff: Long)
+
+    /** Abandon unsynced sessions older than [cutoff] — they'll never reach the server. */
+    @Query("DELETE FROM sleep_sessions WHERE startMs < :cutoff AND synced = 0")
+    suspend fun pruneStaleUnsynced(cutoff: Long)
 }
 
 @Dao
@@ -64,4 +72,8 @@ interface SleepStageDao {
 
     @Query("SELECT * FROM sleep_stages WHERE sessionStartMs = :sessionStartMs ORDER BY timestamp ASC")
     suspend fun getForSession(sessionStartMs: Long): List<SleepStage>
+
+    /** Remove stage rows for sessions that started before [cutoff] ms epoch. */
+    @Query("DELETE FROM sleep_stages WHERE sessionStartMs < :cutoff")
+    suspend fun pruneOld(cutoff: Long)
 }

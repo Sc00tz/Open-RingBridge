@@ -36,7 +36,10 @@ abstract class RingDatabase : RoomDatabase() {
                 "ring.db"
             )
             .addMigrations(MIGRATION_3_4)
-            .fallbackToDestructiveMigration()
+            // NOTE: destructive fallback intentionally NOT enabled. A missing migration
+            // path will throw at startup rather than silently wiping the user's health
+            // history. Any future schema change MUST ship a corresponding Migration.
+            // (No pre-release builds shipped versions 1–3 publicly, so only 3→4 exists.)
             .build().also { INSTANCE = it }
         }
     }

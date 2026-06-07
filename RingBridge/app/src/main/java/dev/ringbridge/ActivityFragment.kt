@@ -58,7 +58,8 @@ class ActivityFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             RingService.readings.collect { map ->
-                updateSteps(map)
+                // Skip view work while this tab is hidden (see VitalsFragment).
+                if (!isHidden) updateSteps(map)
             }
         }
 
@@ -86,6 +87,11 @@ class ActivityFragment : Fragment() {
 
         // Seed from current live state immediately (covers reconnect case)
         updateSteps(RingService.readings.value)
+    }
+
+    override fun onHiddenChanged(hidden: Boolean) {
+        super.onHiddenChanged(hidden)
+        if (!hidden && _binding != null) updateSteps(RingService.readings.value)
     }
 
     override fun onDestroyView() {

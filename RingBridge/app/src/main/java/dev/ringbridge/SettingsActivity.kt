@@ -1,5 +1,6 @@
 package dev.ringbridge
 
+import android.net.Uri
 import android.os.Bundle
 import android.widget.ArrayAdapter
 import android.widget.Toast
@@ -75,6 +76,12 @@ class SettingsActivity : AppCompatActivity() {
         return true
     }
 
+    /** True if [url] is a well-formed http(s) URL with a host. */
+    private fun isValidServerUrl(url: String): Boolean {
+        val uri = Uri.parse(url)
+        return uri.scheme in setOf("http", "https") && !uri.host.isNullOrBlank()
+    }
+
     private fun applyQrPayload(raw: String) {
         try {
             val json   = JSONObject(raw)
@@ -84,6 +91,10 @@ class SettingsActivity : AppCompatActivity() {
 
             if (server.isEmpty() || token.isEmpty()) {
                 Toast.makeText(this, "Invalid QR code — missing server or token", Toast.LENGTH_LONG).show()
+                return
+            }
+            if (!isValidServerUrl(server)) {
+                Toast.makeText(this, "Invalid QR code — server must be a http(s) URL", Toast.LENGTH_LONG).show()
                 return
             }
 
@@ -102,6 +113,7 @@ class SettingsActivity : AppCompatActivity() {
         val token = binding.etDeviceToken.text.toString().trim()
 
         if (url.isEmpty()) { binding.etServerUrl.error = "Required"; return }
+        if (!isValidServerUrl(url)) { binding.etServerUrl.error = "Must be a http(s) URL"; return }
         if (token.isEmpty()) { binding.etDeviceToken.error = "Required"; return }
 
         Settings.setServerUrl(this, url)

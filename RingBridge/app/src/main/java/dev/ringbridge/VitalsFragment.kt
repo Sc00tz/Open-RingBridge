@@ -58,12 +58,20 @@ class VitalsFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             RingService.readings.collect { map ->
-                updateCards(map)
+                // Skip view work while this tab is hidden (fragments are hide/shown,
+                // not destroyed, so the collector stays active in the background).
+                if (!isHidden) updateCards(map)
             }
         }
 
         // Seed with current values immediately
         updateCards(RingService.readings.value)
+    }
+
+    override fun onHiddenChanged(hidden: Boolean) {
+        super.onHiddenChanged(hidden)
+        // Re-seed when this tab becomes visible — the collector skipped updates while hidden.
+        if (!hidden && _binding != null) updateCards(RingService.readings.value)
     }
 
     override fun onDestroyView() {

@@ -13,7 +13,7 @@ import java.util.UUID
  *
  * Responsibilities:
  *  - Discover and cache the ring's characteristics
- *  - Subscribe C3 → C1 → JL_NOTIFY → HR in the exact order app.py uses
+ *  - Subscribe C3 → C1 → JL_NOTIFY → HR in the order the ring expects
  *  - Automatically use INDICATE vs NOTIFY based on characteristic properties
  *  - Serialise all descriptor writes and outgoing command writes via the Nordic queue
  *  - Deliver raw bytes to [onC1C3] and [onHr] callbacks for the protocol layer
