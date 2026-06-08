@@ -5,7 +5,9 @@ Working metrics: Heart Rate, Blood Pressure, SpO2, Glucose (mmol/L + mg/dL), Str
 
 **FOR AI AGENTS — EASY MISTAKES:**
 - `0x060A[11]` is **respiration rate**, NOT stress. Stress comes from real-time ECG (`0x0610`).
-- History uses **per-category** commands (`0x0502`/`0x0504`/`0x0506`/`0x0508`), each deleted right after pulling. The combined `0x0509`/`0x0533` commands are NOT supported by the R01L firmware — see §7.
+- History: BOTH the per-category commands (`0x0502` Sport / `0x0506` Heart / `0x0508` Blood) AND the combined `0x0509` AllHistory / `0x0533` BodyHistory commands return real data on this R01L (verified via live capture 2026-06-08). An earlier revision of this doc wrongly called `0x0509`/`0x0533` unsupported — they are NOT; see §7.
+- **Sleep is the exception:** the dedicated Sleep command `0x0504` returns an empty `[0x00,0x00]` meta on this ring — i.e. NO sleep-session data — even after a full night's wear. Where (or whether) this firmware exposes sleep staging is currently UNKNOWN; do not assume `0x0504`→`0x0513` works. See §7.
+- Do NOT send delete commands (`0x0540`–`0x0543`) — they destroy the ring's history. Pull read-only.
 - ALL history meta packets use `payload[6:8]` for byte count. Not `[4:6]`.
 - `0x0613` (WearingStatus) only fires on state change. Do not expect it on connect.
 - Real-time streaming (`0x060A` etc.) does NOT start until `AppControlReal START` (`0x0309`) is sent.
@@ -303,30 +305,37 @@ Infer initial wearing state from any valid non-zero `0x0603` or `0x060A` packet.
 
 ## 7. History Pull Protocol
 
-History is pulled after the handshake. Each category is requested, ACKed, then
-**deleted on the ring immediately** before moving to the next category.
+History is pulled after the handshake. Each category is requested and ACKed.
 
-> **This is the current method used by the RingBridge Android app**, and it mirrors
-> the per-category sequence the official LivUp app performs on its morning sync
-> (confirmed from `sleep-sync.log`). Earlier revisions (and `best-script.py`) used the
-> combined `0x0509` AllHistory / `0x0533` BodyHistory commands — those are **never
-> issued by the official app and the R01L firmware does not support them reliably**.
-> The per-category commands below are what works on this ring.
+> **DO NOT DELETE.** Earlier revisions sent a per-category delete (`0x0540`–`0x0543`)
+> after each pull, mirroring the official app's morning sync. This is **destructive** —
+> it wipes the ring's only copy of the data, and a single sync can lose a full day.
+> RingBridge no longer sends deletes; the ring manages its own ring-buffer and reads
+> are idempotent (the local DB dedupes on `(timestamp, type)`).
 
-### Commands Used on R01L (confirmed working)
+### What this R01L actually returns (verified by live capture, 2026-06-08)
 
-| Category | Request | C3 Data Type | Delete | Record Size | Contents |
-|---|---|---|---|---|---|
-| **Sport** | `0x0502` | `0x0511` | `0x0540` | **14 bytes** | Steps, distance, calories per activity window |
-| **Sleep** | `0x0504` | `0x0513` | `0x0541` | variable | Sleep sessions with per-stage records |
-| **Heart** | `0x0506` | `0x0515` | `0x0542` | **6 bytes** | Heart rate samples |
-| **Blood** | `0x0508` | `0x0517` | `0x0543` | **8 bytes** | Systolic / diastolic samples |
+Every command below was probed against the physical ring after a full day + night of
+wear. Results corrected a previous version of this doc that had several claims backwards:
 
-Each delete command carries payload `[0x02]`.
+| Category | Request | C3 Data Type | Record Size | Status on R01L |
+|---|---|---|---|---|
+| **Sport** | `0x0502` | `0x0511` | 14 bytes | ✅ returns data |
+| **Heart** | `0x0506` | `0x0515` | 6 bytes | ✅ returns data |
+| **Blood** | `0x0508` | `0x0517` | 8 bytes | ✅ returns data |
+| **AllHistory** | `0x0509` | `0x0518` | 20 bytes | ✅ **returns data** — ~2.5 KB / 5-min resolution HR·BP·SpO₂·resp·glucose. (Previously mislabeled "unsupported".) |
+| **BodyHistory** | `0x0533` | `0x0534` | 28 bytes | ✅ **returns data** — ~1.9 KB HRV/stress body records. (Previously mislabeled "unsupported".) |
+| **Sleep** | `0x0504` | `0x0513` | — | ❌ **returns empty `[0x00,0x00]` meta** even after a full night. This ring does not expose dedicated sleep-session history. See note below. |
 
-> **Not used / unsupported on R01L:** the combined `0x0509` (AllHistory → `0x0518`)
-> and `0x0533` (BodyHistory → `0x0534`) commands, and the global `0x0544` DeleteAll.
-> The official app never sends these and the firmware returns no data for them.
+> **Sleep is unresolved on this firmware.** `0x0504` returns no data. It is possible
+> sleep staging is embedded in the `0x0509` AllHistory stream (some record bytes are
+> still unidentified) or that this ring simply does not compute sleep stages. The
+> `0x0513` sleep-session layout documented below is from the SDK / `sleep-sync.log` and
+> is **NOT confirmed against this R01L** — treat it as unverified until a non-empty
+> `0x0504`/`0x0513` response is actually observed.
+
+> **Tested empty / no response on R01L:** `0x0507`, `0x051D`, `0x0512` (candidate sleep
+> commands), and the global `0x0544` DeleteAll.
 
 ### Full History Flow (per category)
 
@@ -401,9 +410,46 @@ nibble `0xF` (e.g. unsupported), the category has no data — skip to the next o
 
 ---
 
-### Sleep Record Layout (0x0513, variable length)
+### AllHistory Record Layout (0x0518, 20 bytes per record) — ✅ confirmed live
 
-**Verified against `DataUnpack.java` (HistorySleep) and live `sleep-sync.log`.**
+**Confirmed by live capture 2026-06-08: ~2.5 KB returned, one record per 5 minutes.**
+Field offsets below are validated against decoded live records (HR 91, BP 120/80,
+SpO₂ 98, resp 18 — all sane). This is the densest history this ring provides.
+
+| Bytes | Field | Notes |
+|---|---|---|
+| [0..3] | Timestamp (LE, seconds since 2001-01-01) | |
+| [4..5] | Steps (2-byte LE) | |
+| [6] | Heart Rate | bpm |
+| [7] | SBP | Systolic mmHg |
+| [8] | DBP | Diastolic mmHg |
+| [9] | SpO₂ | % |
+| [10] | Respiration rate | brpm |
+| [11] | HRV | ms |
+| [13] | Temperature int | °C — usually 0 on this ring |
+| [14] | sentinel `0x0F` observed on every record | meaning unconfirmed |
+| [17] | Blood glucose raw | ÷10 → mmol/L |
+
+> Bytes [12], [15], [16], [18..19] are not yet identified. **Sleep staging may live
+> here** — investigation pending against an overnight capture.
+
+---
+
+### BodyData Record Layout (0x0534, 28 bytes per record) — ✅ confirmed live
+
+**Confirmed by live capture 2026-06-08: ~1.9 KB returned (HRV / stress / autonomic).**
+See §5b layout in `YCBT_Protocol_Reference.md` for the field map; offsets there matched
+the live records.
+
+---
+
+### Sleep Record Layout (0x0513, variable length) — ⚠️ UNVERIFIED on this R01L
+
+> **This ring returned NO sleep data (`0x0504` → empty `[0x00,0x00]`) in live testing
+> on 2026-06-08, even after a full night's wear.** The layout below is from the SDK and
+> an older `sleep-sync.log` capture (possibly a different device/firmware). It has NOT
+> been confirmed against this R01L. Keep it as a reference, but do not rely on it until
+> a non-empty `0x0513` response is actually observed.
 The payload is one or more concatenated sessions. Each session is a 20-byte header
 followed by 8-byte stage records.
 
@@ -497,12 +543,12 @@ These commands enable the ring to collect data passively between syncs. Send dur
 | Battery | ✅ Working | `0x0200[5]` during handshake |
 | Steps | ✅ Working | `0x020C`, `0x060A[0..2]` |
 | Sport history (steps/distance/calories) | ✅ Working | `0x0502` → `0x0511`, 14-byte records |
-| Sleep history (stages) | ✅ Working | `0x0504` → `0x0513`, variable-length sessions |
 | Heart history | ✅ Working | `0x0506` → `0x0515`, 6-byte records |
 | Blood history (BP) | ✅ Working | `0x0508` → `0x0517`, 8-byte records |
+| **AllHistory** (`0x0509` → `0x0518`) | ✅ **Working** (live-verified 2026-06-08) | ~2.5 KB, 5-min HR·BP·SpO₂·resp·glucose. Earlier "not supported" claim was wrong. |
+| **BodyHistory** (`0x0533` → `0x0534`) | ✅ **Working** (live-verified 2026-06-08) | ~1.9 KB HRV/stress records. Earlier "not supported" claim was wrong. |
+| **Sleep history** (`0x0504` → `0x0513`) | ❌ **Empty on this ring** | Returns `[0x00,0x00]` even after a full night. Sleep staging location unknown — see §7. |
 | Temperature | ⚠️ Unreliable | Field exists in `0x060A[12..13]` but ring does not reliably populate it |
-| AllHistory (`0x0509` → `0x0518`) | ❌ Not used | Firmware returns no data; use the per-category commands above |
-| Body history (`0x0533` → `0x0534`) | ❌ Not used | Firmware returns no data; HRV/stress come from real-time `0x0610` |
 | HRV monitor setting (`0x0145`) | ❌ Unsupported key | Non-fatal; skip |
 
 ---
@@ -521,7 +567,7 @@ These commands enable the ring to collect data passively between syncs. Send dur
 
 6. **SpO2 in `0x0603[4]`** is 0 unless the ring has recently completed a dedicated SpO2 measurement. Not continuously measured.
 
-7. **Stress and HRV are not in passive history** — they come only from a triggered real-time ECG emotional measurement (`0x0610`). The R01L does not return `0x0533` body history.
+7. **`0x0533` BodyHistory DOES return HRV/stress on this ring** (~1.9 KB, live-verified 2026-06-08) — contrary to an earlier claim here. Real-time ECG (`0x0610`) is an additional source, not the only one.
 
 8. **JieLi auth requires prior LivUp pairing AND a JL_NOTIFY subscription** — the ring must have been paired with the official LivUp app at least once, and the app must subscribe to JL Notify (`0xae02`). The RCSP handshake completes passively over that characteristic during the 3-second sleep after the first `0x0200`. **If JL_NOTIFY is not subscribed, the ring sends no data at all** — no real-time packets, no history (confirmed via live capture: subscribing C1+C3 alone yielded zero packets; adding JL_NOTIFY made the ring respond).
 
@@ -529,4 +575,4 @@ These commands enable the ring to collect data passively between syncs. Send dur
 
 10. **No chunk-level ACKs** during history streaming — only the final `0x0580` gets an ACK.
 
-11. **History delete is per-category**, sent right after each category is pulled: Sport=`0x0540`, Sleep=`0x0541`, Heart=`0x0542`, Blood=`0x0543`, each with payload `[0x02]`. The global `0x0544` DeleteAll is not used by the official app.
+11. **Do NOT delete history.** Delete commands exist (Sport=`0x0540`, Sleep=`0x0541`, Heart=`0x0542`, Blood=`0x0543`, payload `[0x02]`; global DeleteAll `0x0544`) but RingBridge intentionally never sends them — they destroy the ring's only copy of the data. The ring manages its own ring-buffer; pulls are read-only and idempotent.

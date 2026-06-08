@@ -35,17 +35,19 @@ BioLocal Ring Bridge reverse-engineers the YCBT BLE protocol used by the LivUp R
 
 ## What It Captures
 
+History columns reflect what the **R01L (fw 1.13) actually returns**, verified by live
+capture on 2026-06-08 — not just what the protocol theoretically supports.
+
 | Metric | Real-time | History | Notes |
 |---|:---:|:---:|---|
-| Heart Rate | ✅ | ✅ | `0x060A`, `0x0601` |
-| Blood Pressure (sys/dia) | ✅ | ✅ | `0x0603`, `0x060A` |
-| SpO₂ | ✅ | — | `0x060A`, `0x0602` (real-time only) |
-| Blood Glucose | ✅ | — | `0x060A[20]` — mmol/L (real-time only) |
-| HRV | ✅ | — | Triggered emotional measurement → `0x0610` |
-| Stress | ✅ | — | Real-time ECG `0x0610` |
-| Respiratory Rate | ✅ | — | `0x060A[11]`, realKey `0x07` mode |
+| Heart Rate | ✅ | ✅ | `0x060A`, `0x0601`; history `0x0506` + `0x0509` |
+| Blood Pressure (sys/dia) | ✅ | ✅ | `0x0603`, `0x060A`; history `0x0508` + `0x0509` |
+| SpO₂ | ✅ | ✅ | `0x060A`, `0x0602`; history `0x0509[9]` |
+| Blood Glucose | ✅ | ✅ | `0x060A[20]` — mmol/L; history `0x0509[17]` |
+| HRV / Stress | ✅ | ✅ | Real-time ECG `0x0610`; history `0x0533` body records |
+| Respiratory Rate | ✅ | ✅ | `0x060A[11]`; history `0x0509[10]` |
 | Steps / Calories / Distance | ✅ | ✅ | `0x060A`, Sport history `0x0511` |
-| Sleep Stages | — | ✅ | Sleep history `0x0513` — Deep / Light / REM / Nap / Wake |
+| Sleep Stages | — | ❌ | **Not available on this ring** — `0x0504` returns empty; staging location unknown |
 | Battery | ✅ | — | Handshake `0x0200` |
 | Wearing State | ✅ | — | `0x060A[14]`, `0x0613` |
 
@@ -206,11 +208,13 @@ python best-script.py
 
 Close the LivUp app first. The script scans for the ring, performs the full handshake, pulls history, then streams live data to a terminal dashboard. All readings are saved to `ring_data.db` (SQLite).
 
-> **Note:** `best-script.py` is a standalone diagnostic tool and pulls history using
-> the older combined-history commands (`0x0509` / `0x0533`). The Android app uses the
-> per-category history commands (`0x0502` / `0x0504` / `0x0506` / `0x0508`) that the
-> official LivUp app uses — see the protocol doc's History section. The app is the
-> primary, current implementation.
+> **Note:** `best-script.py` is a standalone diagnostic tool. It pulls history via the
+> combined `0x0509` / `0x0533` commands, while the Android app currently uses the
+> per-category commands (`0x0502` / `0x0506` / `0x0508`). **Live testing (2026-06-08)
+> showed both command sets return real data on the R01L** — the `0x0509` AllHistory
+> stream is actually richer (5-minute HR/BP/SpO₂/glucose). The dedicated Sleep command
+> (`0x0504`) returns empty on this ring. See the protocol doc's History section for the
+> full verified picture.
 
 **Requirements:** Python 3.9+, macOS or Linux with Bluetooth LE support.
 
@@ -277,8 +281,10 @@ The ring uses the **YCBT protocol** — a proprietary framing layer over BLE IND
 - `0x0580` ACK **must** carry `[0x00]` payload — an empty payload causes the ring to retransmit the entire history stream
 - `0x060A[11]` is respiration rate, not stress
 - `0x0613` (WearingStatus) only fires on state changes, not on connect
-- HRV and stress are not passively streamed — they require triggering an "emotional measurement" sequence: `EMOTIONAL_START` → `CONTROL_WAVE_START` → wait for `0x0610` response → `CONTROL_WAVE_STOP`
+- Real-time HRV/stress requires triggering an "emotional measurement" sequence (`EMOTIONAL_START` → `CONTROL_WAVE_START` → wait for `0x0610` → `CONTROL_WAVE_STOP`); HRV/stress *history* is also available via `0x0533` body records
 - Blood glucose at `0x060A[20]`, raw byte ÷ 10 = mmol/L
+- **Sleep staging does not work on this R01L** — `0x0504` returns empty even after a full night; where (or whether) the firmware exposes sleep stages is unresolved
+- **Never send history delete commands** (`0x0540`–`0x0543`) — they wipe the ring's only copy of the data; pulls are read-only
 
 See [`Ring_Protocol_Documentation.md`](Ring_Protocol_Documentation.md) for the complete byte-level protocol reference.
 
