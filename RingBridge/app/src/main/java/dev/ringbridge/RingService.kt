@@ -503,19 +503,23 @@ class RingService : LifecycleService() {
         hist.pulling = true
         hist.pending = false
 
-        // Sequence confirmed from sleep-sync.log (official LivUp app morning sync).
-        // Each category is requested, ACKed, then immediately deleted on the ring —
-        // the official app never uses a global DeleteAll (0x0544).
+        // We request and ACK each category, but DELIBERATELY DO NOT DELETE it from the
+        // ring afterward. The ring manages its own ring-buffer and overwrites the oldest
+        // records when full, so deletion is not required to keep syncing. Deleting was
+        // destructive: a single sync wiped the ring's only copy, and if the local DB was
+        // ever cleared before that data reached the server, it was gone for good. Reads
+        // are idempotent — re-pulling the same records is harmless because the DB upserts
+        // on (timestamp, type). (DELETE_SPORT/SLEEP/HEART/BLOOD remain defined in
+        // RingProtocol for reference but are intentionally never sent.)
         data class Category(
             val requestCmd: ByteArray,
-            val deleteCmd:  ByteArray,
             val name:       String,
         )
         val categories = listOf(
-            Category(RingProtocol.GET_SPORT_HISTORY, RingProtocol.DELETE_SPORT, "SportHistory"),
-            Category(RingProtocol.GET_SLEEP_HISTORY, RingProtocol.DELETE_SLEEP, "SleepHistory"),
-            Category(RingProtocol.GET_HEART_HISTORY, RingProtocol.DELETE_HEART, "HeartHistory"),
-            Category(RingProtocol.GET_BLOOD_HISTORY, RingProtocol.DELETE_BLOOD, "BloodHistory"),
+            Category(RingProtocol.GET_SPORT_HISTORY, "SportHistory"),
+            Category(RingProtocol.GET_SLEEP_HISTORY, "SleepHistory"),
+            Category(RingProtocol.GET_HEART_HISTORY, "HeartHistory"),
+            Category(RingProtocol.GET_BLOOD_HISTORY, "BloodHistory"),
         )
 
         for (cat in categories) {
@@ -530,16 +534,11 @@ class RingService : LifecycleService() {
             }
 
             // ACK so the ring exits transfer mode, even if we timed out.
+            // NOTE: ACK only — no delete. The ring keeps its history (see above).
             if (hist.ringDone || hist.buffer.isNotEmpty()) {
                 bleManager.send(RingProtocol.HISTORY_ACK)
                 delay(300)
             }
-
-            // Delete this category on the ring immediately after pulling.
-            // Do this unconditionally — if expectedBytes==0 the ring had nothing,
-            // but sending a redundant delete is harmless.
-            bleManager.send(cat.deleteCmd)
-            delay(300)
 
             val buf = hist.buffer
             if (buf.isEmpty()) continue

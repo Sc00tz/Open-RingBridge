@@ -2,8 +2,18 @@ package dev.ringbridge.db
 
 import androidx.room.*
 
-/** A single timestamped sensor observation from the ring. */
-@Entity(tableName = "sensor_readings")
+/**
+ * A single timestamped sensor observation from the ring.
+ *
+ * The unique index on (timestamp, type) makes re-pulling history idempotent: the ring
+ * is never told to delete its history (the ring manages its own buffer), so each sync
+ * re-pulls overlapping records. Inserting with OnConflictStrategy.IGNORE against this
+ * index means duplicates are silently skipped instead of piling up.
+ */
+@Entity(
+    tableName = "sensor_readings",
+    indices = [Index(value = ["timestamp", "type"], unique = true)],
+)
 data class SensorReading(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     /** Unix epoch millis — always set from the phone clock at receive time. */
@@ -22,10 +32,12 @@ data class SensorReading(
 @Dao
 interface SensorReadingDao {
 
-    @Insert
+    // IGNORE on conflict: re-pulled history rows that duplicate (timestamp, type) are
+    // skipped rather than inserted again. Live readings still insert normally.
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(reading: SensorReading): Long
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(readings: List<SensorReading>)
 
     /** Up to [limit] readings not yet sent to HA, oldest first. Capped to avoid CursorWindow OOM. */
