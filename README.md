@@ -284,7 +284,7 @@ The ring uses the **YCBT protocol** — a proprietary framing layer over BLE IND
 - Real-time HRV/stress requires triggering an "emotional measurement" sequence (`EMOTIONAL_START` → `CONTROL_WAVE_START` → wait for `0x0610` → `CONTROL_WAVE_STOP`); HRV/stress *history* is also available via `0x0533` body records
 - Blood glucose at `0x060A[20]`, raw byte ÷ 10 = mmol/L
 - **Sleep staging does not work on this R01L** — `0x0504` returns empty even after a full night; where (or whether) the firmware exposes sleep stages is unresolved
-- **Never send history delete commands** (`0x0540`–`0x0543`) — they wipe the ring's only copy of the data; pulls are read-only
+- **Delete each history category only AFTER its records are confirmed saved locally** (`0x0540`–`0x0543`). The ring has limited flash and does NOT auto-overwrite oldest data — the official app deletes after every pull to free space so the ring keeps recording (confirmed by live HCI capture). Deleting *before* a confirmed save risks data loss; never deleting fills the ring and stops it recording. The gate (save → then delete) avoids both.
 
 See [`Ring_Protocol_Documentation.md`](Ring_Protocol_Documentation.md) for the complete byte-level protocol reference.
 

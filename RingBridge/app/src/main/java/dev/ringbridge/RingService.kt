@@ -503,23 +503,26 @@ class RingService : LifecycleService() {
         hist.pulling = true
         hist.pending = false
 
-        // We request and ACK each category, but DELIBERATELY DO NOT DELETE it from the
-        // ring afterward. The ring manages its own ring-buffer and overwrites the oldest
-        // records when full, so deletion is not required to keep syncing. Deleting was
-        // destructive: a single sync wiped the ring's only copy, and if the local DB was
-        // ever cleared before that data reached the server, it was gone for good. Reads
-        // are idempotent — re-pulling the same records is harmless because the DB upserts
-        // on (timestamp, type). (DELETE_SPORT/SLEEP/HEART/BLOOD remain defined in
-        // RingProtocol for reference but are intentionally never sent.)
+        // DELETE-AFTER-CONFIRMED-SAVE.
+        // The ring has limited flash. The official app deletes each history category
+        // from the ring right after pulling it (captured live: 0x0540–0x0543 follow each
+        // request) — this is REQUIRED so the ring can free space and keep recording. An
+        // earlier build of this app removed deletes entirely on a (wrong) assumption that
+        // the ring auto-overwrites oldest records; it does not, so its flash filled and
+        // recording stopped. We restore deletion, but only AFTER this category's records
+        // are confirmed written to the local DB — so we never delete data we haven't
+        // safely stored. (The local DB is always present, so unlike a server-sync gate
+        // this can't silently never-fire and let the ring fill up again.)
         data class Category(
             val requestCmd: ByteArray,
+            val deleteCmd:  ByteArray,
             val name:       String,
         )
         val categories = listOf(
-            Category(RingProtocol.GET_SPORT_HISTORY, "SportHistory"),
-            Category(RingProtocol.GET_SLEEP_HISTORY, "SleepHistory"),
-            Category(RingProtocol.GET_HEART_HISTORY, "HeartHistory"),
-            Category(RingProtocol.GET_BLOOD_HISTORY, "BloodHistory"),
+            Category(RingProtocol.GET_SPORT_HISTORY, RingProtocol.DELETE_SPORT, "SportHistory"),
+            Category(RingProtocol.GET_SLEEP_HISTORY, RingProtocol.DELETE_SLEEP, "SleepHistory"),
+            Category(RingProtocol.GET_HEART_HISTORY, RingProtocol.DELETE_HEART, "HeartHistory"),
+            Category(RingProtocol.GET_BLOOD_HISTORY, RingProtocol.DELETE_BLOOD, "BloodHistory"),
         )
 
         for (cat in categories) {
@@ -534,66 +537,89 @@ class RingService : LifecycleService() {
             }
 
             // ACK so the ring exits transfer mode, even if we timed out.
-            // NOTE: ACK only — no delete. The ring keeps its history (see above).
             if (hist.ringDone || hist.buffer.isNotEmpty()) {
                 bleManager.send(RingProtocol.HISTORY_ACK)
                 delay(300)
             }
 
             val buf = hist.buffer
+            // Empty category: the ring reported no data. Nothing to save and nothing to
+            // free, so skip — do NOT send a delete (there is no data to lose, and we only
+            // delete after a confirmed save).
             if (buf.isEmpty()) continue
 
-            when (cat.name) {
-                "SleepHistory" -> {
-                    val decoded = RingProtocol.decodeSleepHistory(buf)
-                    Log.i(TAG, "SleepHistory: ${decoded.size} sessions decoded")
-                    if (decoded.isNotEmpty()) {
-                        val db = RingDatabase.get(this)
-                        val sessions = decoded.map { it.session }
-                        db.sleepSessions().insertAll(sessions)
-                        val stages = decoded.flatMap { it.stages }
-                        if (stages.isNotEmpty()) db.sleepStages().insertAll(stages)
-                        _latestSleep.value = sessions.maxByOrNull { it.startMs }
+            // saved = true only once we've confirmed this category's records are written
+            // to the local DB (or there were genuinely zero decodable records in a
+            // non-empty buffer). Delete is gated on this.
+            var saved = false
+            try {
+                when (cat.name) {
+                    "SleepHistory" -> {
+                        val decoded = RingProtocol.decodeSleepHistory(buf)
+                        Log.i(TAG, "SleepHistory: ${decoded.size} sessions decoded")
+                        if (decoded.isNotEmpty()) {
+                            val db = RingDatabase.get(this)
+                            val sessions = decoded.map { it.session }
+                            db.sleepSessions().insertAll(sessions)
+                            val stages = decoded.flatMap { it.stages }
+                            if (stages.isNotEmpty()) db.sleepStages().insertAll(stages)
+                            _latestSleep.value = sessions.maxByOrNull { it.startMs }
+                        }
+                        saved = true   // insertAll returned without throwing
                     }
-                }
-                else -> {
-                    val records = when (cat.name) {
-                        "SportHistory" -> RingProtocol.decodeSportHistory(buf)
-                        "HeartHistory" -> RingProtocol.decodeHeartHistory(buf)
-                        "BloodHistory" -> RingProtocol.decodeBloodHistory(buf)
-                        else           -> emptyList()
-                    }
-                    Log.i(TAG, "${cat.name}: ${records.size} records decoded")
+                    else -> {
+                        val records = when (cat.name) {
+                            "SportHistory" -> RingProtocol.decodeSportHistory(buf)
+                            "HeartHistory" -> RingProtocol.decodeHeartHistory(buf)
+                            "BloodHistory" -> RingProtocol.decodeBloodHistory(buf)
+                            else           -> emptyList()
+                        }
+                        Log.i(TAG, "${cat.name}: ${records.size} records decoded")
 
-                    // Hydrate the dashboard with the most recent non-zero value per metric.
-                    // Skip "steps" from sport history — it would overwrite the live
-                    // cumulative step count that the ring is actively maintaining.
-                    val latestByType = mutableMapOf<String, Pair<Double, Long>>()
-                    for (rec in records) {
-                        for ((type, value) in rec.values) {
-                            if (type == "steps") continue
-                            if (value <= 0) continue
-                            val existing = latestByType[type]
-                            if (existing == null || rec.timestampMs > existing.second) {
-                                latestByType[type] = value to rec.timestampMs
+                        // Hydrate the dashboard with the most recent non-zero value per metric.
+                        // Skip "steps" from sport history — it would overwrite the live
+                        // cumulative step count that the ring is actively maintaining.
+                        val latestByType = mutableMapOf<String, Pair<Double, Long>>()
+                        for (rec in records) {
+                            for ((type, value) in rec.values) {
+                                if (type == "steps") continue
+                                if (value <= 0) continue
+                                val existing = latestByType[type]
+                                if (existing == null || rec.timestampMs > existing.second) {
+                                    latestByType[type] = value to rec.timestampMs
+                                }
                             }
                         }
-                    }
-                    latestByType.forEach { (type, pair) ->
-                        lifecycleScope.launch { publishSensor(type, pair.first) }
-                    }
+                        latestByType.forEach { (type, pair) ->
+                            lifecycleScope.launch { publishSensor(type, pair.first) }
+                        }
 
-                    val dbRows = records.flatMap { rec ->
-                        rec.values
-                            .filter { (_, v) -> v > 0 }
-                            .map { (k, v) ->
-                                SensorReading(timestamp = rec.timestampMs, type = k, value = v)
-                            }
-                    }
-                    if (dbRows.isNotEmpty()) {
-                        RingDatabase.get(this).readings().insertAll(dbRows)
+                        val dbRows = records.flatMap { rec ->
+                            rec.values
+                                .filter { (_, v) -> v > 0 }
+                                .map { (k, v) ->
+                                    SensorReading(timestamp = rec.timestampMs, type = k, value = v)
+                                }
+                        }
+                        if (dbRows.isNotEmpty()) {
+                            RingDatabase.get(this).readings().insertAll(dbRows)
+                        }
+                        saved = true   // decode + DB insert completed without throwing
                     }
                 }
+            } catch (e: Exception) {
+                // Decode/store failed — do NOT delete; leave the data on the ring so the
+                // next sync can retry it. This is the whole point of the gate.
+                Log.w(TAG, "${cat.name}: save failed, NOT deleting from ring: ${e.message}")
+                saved = false
+            }
+
+            // Only now, with the data confirmed in the local DB, free it on the ring so
+            // the ring can keep recording. Re-pulls are idempotent (DB dedupes on
+            // timestamp+type) so even if a delete is lost, no duplication results.
+            if (saved) {
+                bleManager.send(cat.deleteCmd)
+                delay(300)
             }
             delay(300)
         }

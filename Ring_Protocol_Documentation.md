@@ -7,7 +7,7 @@ Working metrics: Heart Rate, Blood Pressure, SpO2, Glucose (mmol/L + mg/dL), Str
 - `0x060A[11]` is **respiration rate**, NOT stress. Stress comes from real-time ECG (`0x0610`).
 - History: BOTH the per-category commands (`0x0502` Sport / `0x0506` Heart / `0x0508` Blood) AND the combined `0x0509` AllHistory / `0x0533` BodyHistory commands return real data on this R01L (verified via live capture 2026-06-08). An earlier revision of this doc wrongly called `0x0509`/`0x0533` unsupported — they are NOT; see §7.
 - **Sleep is the exception:** the dedicated Sleep command `0x0504` returns an empty `[0x00,0x00]` meta on this ring — i.e. NO sleep-session data — even after a full night's wear. Where (or whether) this firmware exposes sleep staging is currently UNKNOWN; do not assume `0x0504`→`0x0513` works. See §7.
-- Do NOT send delete commands (`0x0540`–`0x0543`) — they destroy the ring's history. Pull read-only.
+- Delete each category (`0x0540`–`0x0543`) only AFTER its records are confirmed saved locally. The ring does NOT auto-overwrite — without deletes its flash fills and recording stops (the official app deletes after every pull; confirmed by HCI capture). Deleting before a confirmed save risks loss — gate it.
 - ALL history meta packets use `payload[6:8]` for byte count. Not `[4:6]`.
 - `0x0613` (WearingStatus) only fires on state change. Do not expect it on connect.
 - Real-time streaming (`0x060A` etc.) does NOT start until `AppControlReal START` (`0x0309`) is sent.
@@ -305,13 +305,21 @@ Infer initial wearing state from any valid non-zero `0x0603` or `0x060A` packet.
 
 ## 7. History Pull Protocol
 
-History is pulled after the handshake. Each category is requested and ACKed.
+History is pulled after the handshake. Each category is requested, ACKed, then
+deleted from the ring — but **only after its records are confirmed saved locally**.
 
-> **DO NOT DELETE.** Earlier revisions sent a per-category delete (`0x0540`–`0x0543`)
-> after each pull, mirroring the official app's morning sync. This is **destructive** —
-> it wipes the ring's only copy of the data, and a single sync can lose a full day.
-> RingBridge no longer sends deletes; the ring manages its own ring-buffer and reads
-> are idempotent (the local DB dedupes on `(timestamp, type)`).
+> **DELETE-AFTER-CONFIRMED-SAVE.** The official app sends a per-category delete
+> (`0x0540`–`0x0543`) right after pulling each category (confirmed by live HCI capture)
+> — this is REQUIRED because the ring has limited flash and does NOT auto-overwrite
+> oldest records; without deletes its storage fills and it stops recording. The danger
+> is deleting *before* the data is safely stored. RingBridge resolves both: it decodes
+> and writes each category to the local DB first, and only sends the delete on a
+> confirmed save (skipped if decode/store throws, so the data stays on the ring for the
+> next sync). Re-pulls are idempotent — the local DB dedupes on `(timestamp, type)`.
+>
+> History (this section) — earlier revisions of this doc swung between "always delete"
+> (lost a full day of data) and "never delete" (filled the ring, stopped recording).
+> Both were wrong; the gated approach above is correct.
 
 ### What this R01L actually returns (verified by live capture, 2026-06-08)
 
@@ -575,4 +583,4 @@ These commands enable the ring to collect data passively between syncs. Send dur
 
 10. **No chunk-level ACKs** during history streaming — only the final `0x0580` gets an ACK.
 
-11. **Do NOT delete history.** Delete commands exist (Sport=`0x0540`, Sleep=`0x0541`, Heart=`0x0542`, Blood=`0x0543`, payload `[0x02]`; global DeleteAll `0x0544`) but RingBridge intentionally never sends them — they destroy the ring's only copy of the data. The ring manages its own ring-buffer; pulls are read-only and idempotent.
+11. **Delete history only after a confirmed local save.** Per-category deletes (Sport=`0x0540`, Sleep=`0x0541`, Heart=`0x0542`, Blood=`0x0543`, payload `[0x02]`; global DeleteAll `0x0544`) are REQUIRED to free the ring's flash — it does not auto-overwrite, so skipping deletes fills storage and stops recording. The official app deletes after every pull. RingBridge deletes too, but only once the category's records are confirmed written to the local DB (so a decode/store failure leaves the data on the ring to retry). Never delete before the save is confirmed.
