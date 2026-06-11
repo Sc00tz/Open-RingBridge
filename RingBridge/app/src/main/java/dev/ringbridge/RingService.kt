@@ -523,6 +523,14 @@ class RingService : LifecycleService() {
             Category(RingProtocol.GET_SLEEP_HISTORY, RingProtocol.DELETE_SLEEP, "SleepHistory"),
             Category(RingProtocol.GET_HEART_HISTORY, RingProtocol.DELETE_HEART, "HeartHistory"),
             Category(RingProtocol.GET_BLOOD_HISTORY, RingProtocol.DELETE_BLOOD, "BloodHistory"),
+            // AllHistory: the dense 5-min SpO2/HRV/glucose/resp backfill (0x0509).
+            // Verified live to return ~100 records/24h incl. overnight. DB dedupes on
+            // (timestamp,type) so any overlap with the dedicated streams is harmless.
+            Category(RingProtocol.GET_ALL_HISTORY, RingProtocol.DELETE_ALL, "AllHistory"),
+            // BodyHistory: HRV/stress/SDNN/RMSSD autonomic records (0x0533 → 0x0534).
+            // Pulled by the official app; verified live (~1.9 KB). Shares the global
+            // DeleteAll (0x0544) — there is no dedicated body-delete opcode.
+            Category(RingProtocol.GET_BODY_HISTORY, RingProtocol.DELETE_ALL, "BodyHistory"),
         )
 
         for (cat in categories) {
@@ -572,6 +580,8 @@ class RingService : LifecycleService() {
                             "SportHistory" -> RingProtocol.decodeSportHistory(buf)
                             "HeartHistory" -> RingProtocol.decodeHeartHistory(buf)
                             "BloodHistory" -> RingProtocol.decodeBloodHistory(buf)
+                            "AllHistory"   -> RingProtocol.decodeAllHistory(buf)
+                            "BodyHistory"  -> RingProtocol.decodeBodyHistory(buf)
                             else           -> emptyList()
                         }
                         Log.i(TAG, "${cat.name}: ${records.size} records decoded")
@@ -732,7 +742,7 @@ class RingService : LifecycleService() {
                 hist.pending = true
                 Log.i(TAG, "0x040E: history ready")
             }
-            0x0502, 0x0504, 0x0506, 0x0508 -> { // history meta (Sport=0x0502, Sleep=0x0504, Heart=0x0506, Blood=0x0508)
+            0x0502, 0x0504, 0x0506, 0x0508, 0x0509, 0x0533 -> { // history meta (Sport, Sleep, Heart, Blood, All=0x0509, Body=0x0533)
                 if (payload.size >= 8) {
                     hist.expectedBytes =
                         (payload[6].toInt() and 0xFF) or ((payload[7].toInt() and 0xFF) shl 8)
@@ -751,7 +761,7 @@ class RingService : LifecycleService() {
                     hist.complete = true
                 }
             }
-            0x0511, 0x0513, 0x0515, 0x0517 -> { // history bulk data (Sport=0x0511, Sleep=0x0513, Heart=0x0515, Blood=0x0517)
+            0x0511, 0x0513, 0x0515, 0x0517, 0x0518, 0x0534 -> { // history bulk data (Sport, Sleep, Heart, Blood, All=0x0518, Body=0x0534)
                 hist.append(payload)
                 hist.receivedBytes += payload.size
                 if (hist.expectedBytes > 0 && hist.receivedBytes >= hist.expectedBytes) {

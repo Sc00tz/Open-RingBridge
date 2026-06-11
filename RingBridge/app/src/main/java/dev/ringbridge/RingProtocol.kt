@@ -31,6 +31,16 @@ object RingProtocol {
     /** Seconds between Unix epoch (1970-01-01) and ring epoch (2001-01-01). */
     private const val SEC_2001 = 946684800L
 
+    /**
+     * Plausible ring-epoch seconds range for a real reading: 2020-01-01 .. 2100-01-01.
+     * Blank/padding history records carry 0x00 or 0xFF timestamp bytes, which decode to
+     * either 0 or ~4.29e9 (year 2135) — both nonsense. Decoders use this to drop those
+     * rows instead of writing garbage future-dated readings (e.g. the BP "year 2135" bug).
+     */
+    private const val TS_MIN_RING = 599616000L    // 2020-01-01
+    private const val TS_MAX_RING = 3124224000L   // 2100-01-01
+    private fun plausibleTs(tsRingSec: Long) = tsRingSec in TS_MIN_RING..TS_MAX_RING
+
     // ── CRC & packet framing ──────────────────────────────────────────────────
 
     fun crc16(data: ByteArray, length: Int): Int {
@@ -115,21 +125,27 @@ object RingProtocol {
     val START_REAL_RESP      = buildPacket(0x0309, byteArrayOf(0x01, 0x07, 0x02, 0xA0.toByte()))
     // One-shot snapshot of all current sensor values (HR, BP, SpO2, temp, resp, steps)
     val GET_ALL_REAL_DATA    = buildPacket(0x0220)
-    // History pull — confirmed from sleep-sync.log (official LivUp app morning sync):
-    //   Sport  0x0502 → data on 0x0511 → DeleteSport  0x0540
-    //   Sleep  0x0504 → data on 0x0513 → DeleteSleep  0x0541
-    //   Heart  0x0506 → data on 0x0515 → DeleteHeart  0x0542
-    //   Blood  0x0508 → data on 0x0517 → DeleteBlood  0x0543
-    // The old GET_ALL_HISTORY (0x0509) and GET_BODY_HISTORY (0x0533) are never used
-    // by the official app and appear not to be supported by the ring firmware.
+    // History pull — confirmed from the official app's morning sync (live HCI capture):
+    //   Sport 0x0502 → 0x0511 → DeleteSport 0x0540
+    //   Sleep 0x0504 → 0x0513 → DeleteSleep 0x0541
+    //   Heart 0x0506 → 0x0515 → DeleteHeart 0x0542
+    //   Blood 0x0508 → 0x0517 → DeleteBlood 0x0543
+    //   All   0x0509 → 0x0518 → DeleteAll   0x0544
+    // 0x0509 (AllHistory) is the densest source: one 20-byte record every 5 minutes
+    // carrying HR/SBP/DBP/SpO2/resp/HRV/glucose, INCLUDING overnight. Verified live on
+    // 2026-06-11: 113 records/24h, ~100 with SpO2/HRV/glucose. (An earlier revision
+    // wrongly called 0x0509 unsupported and removed its decoder — it works; restored.)
     val GET_SPORT_HISTORY    = buildPacket(0x0502)
     val GET_SLEEP_HISTORY    = buildPacket(0x0504)
     val GET_HEART_HISTORY    = buildPacket(0x0506)
     val GET_BLOOD_HISTORY    = buildPacket(0x0508)
+    val GET_ALL_HISTORY      = buildPacket(0x0509)
+    val GET_BODY_HISTORY     = buildPacket(0x0533)   // HRV/stress/SDNN; deleted via 0x0544
     val DELETE_SPORT         = buildPacket(0x0540, byteArrayOf(0x02))
     val DELETE_SLEEP         = buildPacket(0x0541, byteArrayOf(0x02))
     val DELETE_HEART         = buildPacket(0x0542, byteArrayOf(0x02))
     val DELETE_BLOOD         = buildPacket(0x0543, byteArrayOf(0x02))
+    val DELETE_ALL           = buildPacket(0x0544, byteArrayOf(0x02))
     val GET_REAL_SPO2        = buildPacket(0x0211, byteArrayOf(0x01))
     // HISTORY_ACK: must carry [0x00] payload (CRC-ok). Empty payload causes ring to retransmit.
     val HISTORY_ACK          = buildPacket(0x0580, byteArrayOf(0x00))
@@ -250,7 +266,7 @@ object RingProtocol {
             val steps    = raw[offset + 8].u8() or (raw[offset + 9].u8() shl 8)
             val distance = raw[offset + 10].u8() or (raw[offset + 11].u8() shl 8)
             val calories = raw[offset + 12].u8() or (raw[offset + 13].u8() shl 8)
-            if (startSec > 0L) {
+            if (plausibleTs(startSec)) {
                 records += HistoryRecord(
                     type        = "sport",
                     timestampMs = (startSec + SEC_2001) * 1000L,
@@ -280,7 +296,7 @@ object RingProtocol {
             val tsSec = ByteBuffer.wrap(raw, offset, 4)
                 .order(ByteOrder.LITTLE_ENDIAN).int.toLong() and 0xFFFFFFFFL
             val hr = raw[offset + 5].u8()
-            if (tsSec > 0L && hr > 0) {
+            if (plausibleTs(tsSec) && hr > 0) {
                 records += HistoryRecord(
                     type        = "hr",
                     timestampMs = (tsSec + SEC_2001) * 1000L,
@@ -288,6 +304,115 @@ object RingProtocol {
                 )
             }
             offset += 6
+        }
+        return records
+    }
+
+    /**
+     * Decode the AllHistory comprehensive stream (0x0518, requested via 0x0509).
+     * 20 bytes per record, one record per ~5 minutes, INCLUDING overnight — the densest
+     * source of SpO2 / HRV / glucose / respiration this ring provides.
+     *
+     * Byte layout VERIFIED against live capture (2026-06-11), values cross-checked sane:
+     *   [0..3]  timestamp uint32 LE — seconds since 2001-01-01
+     *   [4..5]  steps uint16 LE      (often 0 here; sport history 0x0511 is authoritative)
+     *   [6]     heart rate (bpm)
+     *   [7]     SBP (mmHg)
+     *   [8]     DBP (mmHg)
+     *   [9]     SpO2 (%)
+     *   [10]    respiration rate (brpm)
+     *   [11]    HRV (ms)
+     *   [13]    temperature int (°C; usually 0 on this ring)
+     *   [14]    constant sentinel 0x0F (not data)
+     *   [17]    blood glucose raw (÷10 → mmol/L)
+     *   [18..19] per-record CRC (not data)
+     * Each field is gated on >0 so warmup/blank records contribute nothing.
+     */
+    fun decodeAllHistory(raw: ByteArray): List<HistoryRecord> {
+        val records = mutableListOf<HistoryRecord>()
+        var offset = 0
+        while (offset + 20 <= raw.size) {
+            val tsSec = ByteBuffer.wrap(raw, offset, 4)
+                .order(ByteOrder.LITTLE_ENDIAN).int.toLong() and 0xFFFFFFFFL
+            val hr   = raw[offset + 6].u8()
+            val sbp  = raw[offset + 7].u8()
+            val dbp  = raw[offset + 8].u8()
+            val spo2 = raw[offset + 9].u8()
+            val resp = raw[offset + 10].u8()
+            // byte [11] is HRV but intentionally not used — BodyHistory owns HRV (see below)
+            val gluc = raw[offset + 17].u8()
+            if (plausibleTs(tsSec)) {
+                val values = buildMap {
+                    if (hr   > 0) put("hr",            hr.toDouble())
+                    if (sbp  > 0) put("systolic",      sbp.toDouble())
+                    if (dbp  > 0) put("diastolic",     dbp.toDouble())
+                    if (spo2 > 0) put("spo2",          spo2.toDouble())
+                    if (resp > 0) put("resp_rate",     resp.toDouble())
+                    // NOTE: HRV intentionally NOT emitted here. BodyHistory (0x0534) is the
+                    // authoritative HRV source (also carries stress/SDNN/RMSSD). Both streams
+                    // record HRV at slightly different timestamps, so emitting it from both
+                    // produced near-duplicate "stacked" HRV entries. AllHistory owns
+                    // spo2/glucose/resp/hr/bp; BodyHistory owns hrv/stress/sdnn/rmssd.
+                    // glucose sentinel 15 = "still measuring"; raw ÷10 = mmol/L
+                    if (gluc != 0 && gluc != 15) put("blood_glucose", gluc / 10.0)
+                }
+                if (values.isNotEmpty()) {
+                    records += HistoryRecord(
+                        type        = "all",
+                        timestampMs = (tsSec + SEC_2001) * 1000L,
+                        values      = values,
+                    )
+                }
+            }
+            offset += 20
+        }
+        return records
+    }
+
+    /**
+     * Decode the BodyData history stream (0x0534, requested via 0x0533).
+     * 28 bytes per record — HRV / stress / autonomic-nervous-system metrics. Verified
+     * to return real data on this ring (live capture 2026-06-11: ~1.9 KB, incl. overnight).
+     * Layout from DataUnpack.java case 51 (HistoryBodyData), cross-checked against the
+     * live byte dump:
+     *   [0..3]   timestamp uint32 LE — seconds since 2001-01-01
+     *   [4]      loadIndexInt   [5] loadIndexFrac
+     *   [6]      hrvInt         [7] hrvFrac        → hrv_ms = b6 + b7/10
+     *   [8]      pressureInt    [9] pressureFrac   → stress = b8*10 + b9
+     *   [10]     bodyInt        [11] bodyFrac
+     *   [12]     sympatheticInt [13] sympatheticFrac
+     *   [14..15] SDNN uint16 LE (ms)
+     *   [16]     VO2max  [17] pnn50
+     *   [18..19] RMSSD uint16 LE   [20..21] LF   [22..23] HF   [24] LF/HF ×10
+     *   [25..27] unused / per-record CRC
+     */
+    fun decodeBodyHistory(raw: ByteArray): List<HistoryRecord> {
+        val records = mutableListOf<HistoryRecord>()
+        var offset = 0
+        while (offset + 28 <= raw.size) {
+            val tsSec = ByteBuffer.wrap(raw, offset, 4)
+                .order(ByteOrder.LITTLE_ENDIAN).int.toLong() and 0xFFFFFFFFL
+            val hrvInt  = raw[offset + 6].u8()
+            val hrvFrac = raw[offset + 7].u8()
+            val stress  = raw[offset + 8].u8() * 10 + raw[offset + 9].u8()
+            val sdnn    = raw[offset + 14].u8() or (raw[offset + 15].u8() shl 8)
+            val rmssd   = raw[offset + 18].u8() or (raw[offset + 19].u8() shl 8)
+            if (plausibleTs(tsSec)) {
+                val values = buildMap {
+                    if (hrvInt > 0 || hrvFrac > 0) put("hrv", hrvInt + hrvFrac / 10.0)
+                    if (stress > 0) put("stress", stress.toDouble())
+                    if (sdnn  in 1..2000) put("sdnn",  sdnn.toDouble())
+                    if (rmssd in 1..2000) put("rmssd", rmssd.toDouble())
+                }
+                if (values.isNotEmpty()) {
+                    records += HistoryRecord(
+                        type        = "body",
+                        timestampMs = (tsSec + SEC_2001) * 1000L,
+                        values      = values,
+                    )
+                }
+            }
+            offset += 28
         }
         return records
     }
@@ -309,7 +434,7 @@ object RingProtocol {
                 .order(ByteOrder.LITTLE_ENDIAN).int.toLong() and 0xFFFFFFFFL
             val sbp = raw[offset + 5].u8()
             val dbp = raw[offset + 6].u8()
-            if (tsSec > 0L && sbp > 0) {
+            if (plausibleTs(tsSec) && sbp > 0) {
                 records += HistoryRecord(
                     type        = "blood",
                     timestampMs = (tsSec + SEC_2001) * 1000L,

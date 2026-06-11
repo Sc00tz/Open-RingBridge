@@ -1,3 +1,6 @@
+import java.text.SimpleDateFormat
+import java.util.Date
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -13,7 +16,11 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = 1
-        versionName = "1.0"
+        // versionName carries a build timestamp so the installed build is identifiable
+        // at a glance in Android's App Info screen (e.g. "1.0 (2026-06-11 07:45)").
+        // Stamped at configuration time from the local clock on each build.
+        val buildStamp = SimpleDateFormat("yyyy-MM-dd HH:mm").format(Date())
+        versionName = "1.0 ($buildStamp)"
     }
 
     buildTypes {

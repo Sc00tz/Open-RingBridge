@@ -67,6 +67,23 @@ class MainActivity : AppCompatActivity() {
         promptBatteryOptimization()
     }
 
+    // Drive the service's foreground state from the Activity lifecycle. The service
+    // also listens for SCREEN_OFF / USER_PRESENT, but USER_PRESENT only fires on a
+    // keyguard unlock — on phones with no secure lock (or when the app is opened while
+    // already unlocked) it never fires, leaving the service stuck in "background" mode
+    // and never pulling history (e.g. the morning sleep session). onResume is the
+    // reliable "user is looking at the app, safe to sync" signal.
+    override fun onResume() {
+        super.onResume()
+        RingService.setForeground(true)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // App no longer visible → let the ring return to autonomous low-power monitoring.
+        RingService.setForeground(false)
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         val tag = when (activeFragment) {
