@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - run: pip install -r bench/requirements.txt
+      - name: Python tests (decoder, formulas, clock fix, hub)
+        run: python -m unittest discover -s tests -v
+      - name: Parity fixture is up to date
+        run: python tests/make_parity.py && git diff --exit-code tests/parity.json
+
+  android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Kotlin tests (same vectors and parity data as Python)
+        run: ./gradlew testDebugUnitTest
+      - name: Build debug APK
+        run: ./gradlew assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: open-ringbridge-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+
+  hub-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build hub image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false

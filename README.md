@@ -79,3 +79,8 @@ docker build -t open-ringbridge-hub .                    # hub image
 
 Pushing a tag like `v0.1.0` builds the APK and the hub image and publishes a release. The hub image goes
 to `ghcr.io/sc00tz/open-ringbridge-hub`.
+
+Releases are signed with one key, so each new APK installs over the last. The release workflow reads it
+from four repository secrets: `SIGNING_KEYSTORE_BASE64` (the `.jks` file, base64), `SIGNING_STORE_PASSWORD`,
+`SIGNING_KEY_ALIAS` and `SIGNING_KEY_PASSWORD`. Keep a copy of the keystore somewhere safe. Without it,
+future versions can't update an installed app.

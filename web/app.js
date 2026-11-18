@@ -52,6 +52,7 @@ const ago = ts => {
   if (min < 1) return "just now";
   if (min < 60) return `${min} min ago`;
   if (min < 1440) return `${Math.round(min / 60)} h ago`;
+  if (Math.round(min / 1440) === 1) return "1 day ago";
   return `${Math.round(min / 1440)} days ago`;
 };
 const fmt = (v, digits = 0) => Number(v).toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits });

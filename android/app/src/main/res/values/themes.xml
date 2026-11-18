@@ -1,0 +1,7 @@
+<resources>
+    <style name="Theme.RingBridge" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/page</item>
+    </style>
+    <color name="page">#0E0E0E</color>
+    <color name="launcher_bg">#14306B</color>
+</resources>

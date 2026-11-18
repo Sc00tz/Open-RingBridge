@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Plain http is allowed so a hub on your own network works. The app refuses http for public
+     addresses itself (HubClient.signIn), so passwords never cross the internet unencrypted. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>
