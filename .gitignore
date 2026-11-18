@@ -1,0 +1,33 @@
+# Vendor material: never commit the official app or anything extracted from it.
+extracted/
+analysis/
+*.apk
+*.xapk
+*.aab
+
+# Personal health data and recordings from a real ring.
+bench/data/
+hub/data/
+/data/
+tools/captures/
+*.db
+*.db-journal
+*.bin
+
+# Local tooling
+.venv/
+client/
+__pycache__/
+*.pyc
+.DS_Store
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/keystore.properties
+*.jks
+*.keystore
+.idea/
+*.iml

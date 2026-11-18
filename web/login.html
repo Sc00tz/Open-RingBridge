@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sign in · Open RingBridge</title>
+<link rel="stylesheet" href="/web/app.css">
+<style>
+  .signin { max-width: 400px; margin: 0 auto; padding: 48px 16px; }
+  .signin h1 { font-size: 24px; font-weight: 600; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<main class="signin">
+  <h1 id="heading">Open RingBridge</h1>
+  <p class="sub" id="intro" style="color:var(--ink-2);font-size:14px">Sign in to see your ring's data.</p>
+  <form id="form" class="card" style="margin-top:16px">
+    <label class="field">Username <input id="username" autocomplete="username" required autocapitalize="none" spellcheck="false"></label>
+    <label class="field">Password <input id="password" type="password" autocomplete="current-password" required></label>
+    <button class="btn" type="submit" id="submit" style="margin-top:16px;width:100%">Sign in</button>
+    <div id="msg" class="formerr" role="alert"></div>
+  </form>
+</main>
+<script type="module">
+  try { const t = localStorage.getItem("theme"); if (t && t !== "system") document.documentElement.dataset.theme = t; } catch {}
+  const $ = id => document.getElementById(id);
+  const state = await (await fetch("/api/setup")).json();
+  if (state.needs_setup) {
+    $("heading").textContent = "Set up your hub";
+    $("intro").textContent = "Create the first account. It becomes the admin, and can add other people later.";
+    $("password").autocomplete = "new-password";
+    $("password").minLength = 10;
+    $("password").previousSibling.textContent = "Password (10+ characters) ";
+    $("submit").textContent = "Create account";
+  }
+  $("form").addEventListener("submit", async e => {
+    e.preventDefault();
+    $("msg").textContent = "";
+    $("submit").disabled = true;
+    try {
+      const r = await fetch(state.needs_setup ? "/api/setup" : "/api/login", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: $("username").value, password: $("password").value }),
+      });
+      if (!r.ok) throw new Error(await r.text());
+      location.href = "/";
+    } catch (err) {
+      $("msg").textContent = String(err.message || err);
+      $("submit").disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

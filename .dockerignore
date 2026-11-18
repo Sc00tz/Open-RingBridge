@@ -1,0 +1,6 @@
+*
+!core/**
+!hub/**
+!web/**
+hub/data
+**/__pycache__

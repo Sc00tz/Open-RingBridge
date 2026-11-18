@@ -1,0 +1,18 @@
+# Open RingBridge hub. Start with: docker compose up -d   then open http://<this machine>:8080
+services:
+  hub:
+    image: ghcr.io/sc00tz/open-ringbridge-hub:latest
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # The ring records wall-clock time, so set this to where you live.
+      TZ: America/New_York
+      # Set to 1 if a reverse proxy (Caddy, Traefik, nginx) handles HTTPS in front of the hub.
+      HUB_TRUST_PROXY: "0"
+    volumes:
+      - ringbridge-data:/data
+
+volumes:
+  ringbridge-data:
