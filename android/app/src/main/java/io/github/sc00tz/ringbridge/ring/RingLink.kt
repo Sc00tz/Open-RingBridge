@@ -38,6 +38,13 @@ class RingLink(private val context: Context, private val address: String) {
 
         /** Only one connection at a time: the ring itself seems to allow just one. */
         val busy = Mutex()
+
+        /** The CCCD value for a characteristic: notifications if it offers them, otherwise indications. */
+        fun cccdValue(properties: Int): ByteArray = when {
+            properties and BluetoothGattCharacteristic.PROPERTY_NOTIFY != 0 -> BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+            properties and BluetoothGattCharacteristic.PROPERTY_INDICATE != 0 -> BluetoothGattDescriptor.ENABLE_INDICATION_VALUE
+            else -> BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+        }
     }
 
     private var gatt: BluetoothGatt? = null
@@ -101,10 +108,15 @@ class RingLink(private val context: Context, private val address: String) {
         for (uuid in listOf(C3, C1)) chars.firstOrNull { it.uuid == uuid }?.let { notify(g, it) }
     }
 
+    /**
+     * Subscribe to a characteristic. The ring's C1 and C3 only support indications, and the ring drops
+     * the connection if the notification flag is written instead (seen on a Pixel 9 Pro), so use
+     * whichever one the characteristic offers, like Bleak does on the Mac.
+     */
     private suspend fun notify(g: BluetoothGatt, c: BluetoothGattCharacteristic) {
         g.setCharacteristicNotification(c, true)
         val d = c.getDescriptor(CCCD) ?: return
-        val value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+        val value = cccdValue(c.properties)
         gattOp {
             if (Build.VERSION.SDK_INT >= 33) g.writeDescriptor(d, value) == BluetoothGatt.GATT_SUCCESS
             else @Suppress("DEPRECATION") run { d.value = value; g.writeDescriptor(d) }

@@ -25,6 +25,9 @@ Source: `core.CMD`, `gatt.BleHelper.mOnServicesDiscovered`. **[code]**
 
 - The app requests MTU 500, unless its MTU is already 185, and then enables
   indications through descriptor `00002902`. **[code]**
+- **Write the indication value (`02 00`) to `00002902`, not the notification value (`01 00`).**
+  When an Android phone wrote `01 00` to C1, the ring dropped the connection within about 35 ms
+  (HCI reason 0x13). The same steps with `02 00` sync normally. **[seen, Pixel 9 Pro, 2026-11-19]**
 - **Observed on a real ring** (`R01L C923`, 2026-11-06, from macOS, MTU reported as
   185). Services listed only, with no values read or written:
 
